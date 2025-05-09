@@ -15,8 +15,7 @@ Changelog:
 
 Usage: 
 Run this file directly to start a Multithreading instance of Tensorflow FL with the chosen number of clients rounds and model.
-RUNtest
-import os
+
 """
 
 import torch

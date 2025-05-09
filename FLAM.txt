@@ -1,5 +1,5 @@
          time_stamp  satellite_count satellite_name aggregator_flag federatedlearning_adjacencymatrix
 2024-08-12 12:00:00                3    Satellite 1            True [[0, 0, 1], [0, 0, 0], [1, 0, 0]]
 2024-08-12 12:30:00                3           None            None [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
-2024-08-12 13:00:00                3    Satellite 3            True [[0, 0, 1], [0, 0, 0], [1, 0, 0]]
+2024-08-12 13:00:00                3    Satellite 3            True [[0, 0, 1], ][0, 0, 0, [1, 0, 0]]
 2024-08-12 13:30:00                3           None            None [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
