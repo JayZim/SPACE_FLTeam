@@ -3,9 +3,10 @@ Filename: algorithm_core.py
 Description: Manage FLOMPS algorithm processes. 
 Initial Creator: Elysia Guglielmo (System Architect)
 Author: Yuganya Perumal
-Date: 2024-07-31
+Author: Stephen ZENG
+Date: 2025-05-14
 Version: 1.0
-Python Version: 
+Python Version: 3.10
 
 Changelog:
 - 2024-07-31: Initial creation.
@@ -13,7 +14,7 @@ Changelog:
 - 2024-09-09: Move Algorithm Steps from Algorithm Handler to Algorithm Core by Yuganya Perrumal
 - 2024-09-21: Implemented Load Balancing based on past selection of the satellite when there more than one satellite with max no. of connectivity.
 - 2024-10-03: Removed validation for satellite names. auto generation of satellite names implemented if none found.
-
+- 2025-05-14: Added Algorithm Tuner by Stephen ZENG
 
 Usage: 
 Instantiate to setup Algorithmhandler and AlgorithmConfig.
@@ -29,6 +30,8 @@ class Algorithm():
         self.output = AlgorithmOutput()
         self.selection_counts = None
         self.output_to_file = True 
+        self.tuner = None  # add tuner attribute
+        self.connectivity_threshold = None  # add connectivity threshold attribute
         
     def set_satellite_names(self, satellite_names):
         self.satellite_names = satellite_names
@@ -45,6 +48,13 @@ class Algorithm():
     
     def set_output_to_file(self, output_to_file):
         self.output_to_file = output_to_file
+    
+    def set_tuner(self, tuner):  
+        self.tuner = tuner  
+  
+    def set_connectivity_threshold(self, threshold):  
+        # Set the connectivity threshold for the algorithm.
+        self.connectivity_threshold = threshold
     
     def select_satellite_with_max_connections(self, each_matrix):
         satellite_connections = npy.sum(each_matrix, axis=1)
@@ -127,6 +137,4 @@ class Algorithm():
         if self.output_to_file:
             self.output.write_to_file(algorithm_output) # write to file.
             
-        self.output.set_result(algorithm_output) # set result to AlgorithmOutput 
-       
-    
+        self.output.set_result(algorithm_output) # set result to AlgorithmOutput

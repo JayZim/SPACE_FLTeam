@@ -2,8 +2,8 @@
 Filename: algorithm_output.py
 Description: Prepares and sends data to Federated Learning module
 Initial Creator: Elysia Guglielmo (System Architect)
-Author: Yuganya Perumal
-Date: 2024-08-07
+Author: Yuganya Perumal,stephen zeng
+Date: 2025-05-14
 Version: 1.0
 Python Version: 
 
@@ -14,7 +14,8 @@ Changelog:
 - 2024-09-09: Algorithm output returns the FLAM.
 - 2024-09-21: Algorithm output re organised to remove redundancy and added timestamp and satellite name to data structure passed to FL.
 - 2024-10-14: Output file name changed to FLAM.txt as per client feedback.
-
+- 2025-05-14: Added Algorithm Tuner by Stephen ZENG
+- 2025-05-14: Added method to log result to console by Stephen ZENG
 Usage: 
 Instantiate AlgorithmOutput and assign FLInput. 
 """
@@ -64,7 +65,7 @@ class AlgorithmOutput(Output):
             algo_op_rows.append({
                 'time_stamp': timestamp,
                 'satellite_count': satellite_count,
-                'satellite_name':selected_satellite,
+                'satellite_server':selected_satellite,
                 'aggregator_flag': aggregator_flag,
                 'federatedlearning_adjacencymatrix': fl_am
             })
@@ -80,15 +81,23 @@ class AlgorithmOutput(Output):
         print(self.flam_output)
     
      # Write the Federated Learning Adjacency Matrix (FLAM) to the file.
-    def write_to_file(self, algorithm_output):
-        # Generate timestamp string
-        timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-        # Generate unique output file name with 'sat_sim_output' and date/time
-        output_file_name = f"flam_{timestamp_str}.txt"
-        # Construct full output file path
-        output_file = os.path.join(self.output_path, output_file_name)
-        print(f"Writing output to {output_file}")
-
-        self.process_algorithm_output(algorithm_output)
+    def write_to_file(self, algorithm_output, output_file=None):
+        if not output_file:
+            output_file = self._generate_output_filename()
+        
+        # add timestamp to output file name
+        if self.flam_output is None:
+            self.process_algorithm_output(algorithm_output)  # output is a dictionary
+        
+        import os
+        output_dir = os.path.dirname(output_file)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+        
         with open(output_file, 'w') as file:
-            file.write(self.get_flam().to_string(index=False)) 
+            file.write(self.get_flam().to_string(index=False))
+
+    def _generate_output_filename(self):
+        """Generate output filename with timestamp"""
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        return os.path.join(self.output_path, f"flam_{timestamp}.txt")

@@ -1,10 +1,10 @@
 """
 Filename: module_factory.py
 Description: Creates modules for simulation pipeline
-Author: Elysia Guglielmo
-Date: 2024-08-011
+Author: Elysia Guglielmo,stephen zeng
+Date: 2025-05-14
 Version: 1.0
-Python Version: 
+Python Version: 3.10
 
 Changelog:
 - 2024-08-11: Initial creation.
@@ -15,7 +15,15 @@ Usage: Access a module and its I/O interfaces by calling the relevant create fun
 from enum import Enum
 from typing import NamedTuple
 
+import sys
+sys.path.append('/Users/stephentsang/Documents/GitHub/SPACE_FLTeam/.venv/lib/python3.11/site-packages')  
+
 from sat_sim.sat_sim import SatSim
+
+
+
+from flomps_algorithm.algorithm_core import Algorithm
+from federated_learning.fl_core import FederatedLearning as FL
 from sat_sim.sat_sim_config import SatSimConfig
 from sat_sim.sat_sim_handler import SatSimHandler
 from sat_sim.sat_sim_output import SatSimOutput
@@ -30,6 +38,7 @@ from federated_learning.fl_config import FLConfig
 from federated_learning.fl_handler import FLHandler
 from federated_learning.fl_output import FLOutput
 
+
 class ModuleKey(Enum):
     SAT_SIM = "sat_sim"
     ALGORITHM = "algorithm"
@@ -37,11 +46,11 @@ class ModuleKey(Enum):
     MODEL = "model"
 
 MODULE_MAPPING = {
-        'sat_sim': 'sat_sim',
-        'algorithm': 'algorithm',
-        'fl': 'federated_learning',
-        'model': 'model'
-    }
+    'sat_sim': 'sat_sim',
+    'algorithm': 'algorithm',  
+    'fl': 'federated_learning',
+    'model': 'model'
+}
 
 # Instantiate relevant classes
 

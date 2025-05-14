@@ -1,0 +1,8 @@
+{
+    "tuner": {
+      "enabled": true,
+      "parameters": {
+        "connectivity_threshold": 0.5
+      }
+    }
+  }

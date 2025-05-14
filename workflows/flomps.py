@@ -20,7 +20,7 @@ def run(input_file, options):
     # Create Modules
     sat_sim_module, algorithm_module, fl_module = build_modules(options)
     
-    # # Simulation Process
+    # Simulation Process
     sat_sim_module.handler.parse_file(input_file)
     sat_sim_module.handler.run_module()
     matrices = sat_sim_module.output.get_result()
@@ -32,4 +32,29 @@ def run(input_file, options):
     print(flam)
 
     fl_module.handler.parse_data(flam)
+    fl_module.handler.run_module()
+
+def run_with_tuning(input_file, options):  
+    # Create Modules  
+    sat_sim_module, algorithm_module, fl_module = build_modules(options)  
+      
+    # Simulation Process  
+    sat_sim_module.handler.parse_file(input_file)  
+    sat_sim_module.handler.run_module()  
+    matrices = sat_sim_module.output.get_result()  
+      
+    # if "tuner" in options["algorithm"] and options["algorithm"]["tuner"]["enabled"]:
+    if "tuner" in options["algorithm"] and options["algorithm"]["tuner"]["enabled"]:  
+        # assume AlgorithmConfig has a tuner attribute 
+        tuner = algorithm_module.handler.algorithm.tuner  
+        best_params, best_perf = tuner.optimize(matrices.matrices)  
+        print(f"Tuning completed. Best parameters: {best_params}")  
+        print(f"Performance metrics: {best_perf}")  
+      
+    # countinue with the rest of the algorithm process
+    algorithm_module.handler.parse_data(matrices)  
+    algorithm_module.handler.run_module()  
+    flam = algorithm_module.output.get_result()  
+      
+    fl_module.handler.parse_data(flam)  
     fl_module.handler.run_module()

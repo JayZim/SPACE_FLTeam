@@ -74,7 +74,6 @@ setuptools==69.5.1
 sgp4==2.23
 shellingham==1.5.4
 six==1.16.0
-skyfield==1.49
 tensorboard==2.16.2
 tensorboard-data-server==0.7.2
 tensorflow==2.16.1
@@ -93,3 +92,6 @@ wcwidth==0.2.13
 Werkzeug==3.0.2
 wheel==0.43.0
 wrapt==1.16.0
+skyfield==1.46.0
+torch==2.3.0
+torchvision==0.18.0

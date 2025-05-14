@@ -20,7 +20,9 @@ def add_algorithm_args(parser):
     print("Adding ALGORITHM args")
     algorithm_group = parser.add_argument_group(ModuleKey.ALGORITHM)
 
-    # Add args here
+    # add args here
+    algorithm_group.add_argument('--enable-tuning', action='store_true', help='Enable algorithm parameter tuning')
+    algorithm_group.add_argument('--tuning-iterations', type=int, help='Number of tuning iterations to run')
 
 def add_fl_args(parser):
     """CLI Arguments for Federated Learning module."""
@@ -46,7 +48,10 @@ def setup_flomps_parser(parser):
         parser.add_argument('--algorithm-only', action='store_true', help="Run the Algorithm standalone. Requires an Adjacency Matrices (.am) file.")
         parser.add_argument('--fl-only', action='store_true', help="Run the Federated Learning standalone. Requires a Federated Learning Adjacency Matrices (.flam) file.")
         parser.add_argument('--model-only', action='store_true', help="Run the ML model standalone.")
-
+    
+   
+    setup_settings_parser(parser)  # Add settings parser
+    
     # Bundle FLOMPS parser
     add_positional_args(parser)
     add_options_args(parser)

@@ -18,7 +18,17 @@
     "algorithm": {
         "module_settings": {
             "output_to_file": true
-        }
+        },
+        "tuner": {
+            "enabled": false,
+            "iterations": 10,
+            "parameters": {
+                "connectivity_threshold": 10000,
+                "load_balancing_weight": 0.5
+            }
+        },
+        "enable_tuning": true,
+        "tuning_iterations": 50
     },
     "federated_learning": {
         "num_rounds": 1,

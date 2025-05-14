@@ -1,8 +1,8 @@
 """
 Filename: main.py
 Description: Simulation Manager
-Author: Elysia Guglielmo
-Date: 2024-08-11
+Author: Elysia Guglielmo,Stephen ZENG
+Date: 2025-05-14
 Version: 2.0
 
 Changelog:
@@ -12,6 +12,7 @@ Changelog:
 - 2024-09-15: Global settings, custom JSON options file feature, bug fixes
 - 2024-09-22: Integrated FLOMPS simulation workflow.
 - 2024-10-28: Refactored for future development and simulation workflows.
+- 2025-05-14: Added Algorithm Tuner by Stephen ZENG
 
 Usage: 
 python main.py <workflow> <input-file> <standalone-module(?)> <module-args>
