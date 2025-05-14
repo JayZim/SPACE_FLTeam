@@ -26,9 +26,6 @@ class FLHandler(Handler):
     def parse_input(self, file):
         return self.parse_file(file)
 
-    def extract_client_addresses(self, flam):
-        return flam.get("client_addresses", []) if isinstance(flam, dict) else []
-
     def run_module(self):
         if self.flam is not None:
             print("[INFO] Parsing FLAM metadata for simulation...")
