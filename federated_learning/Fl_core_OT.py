@@ -81,7 +81,7 @@ class FederatedLearning:
         print("Global model initialized.")
 
     async def train_client_async(self, model, data_loader):
-        """异步训练单个客户端。"""
+        """Asynchronously train a single client."""
         model.train()
         optimizer = optim.SGD(model.parameters(), lr=0.01)
         criterion = nn.CrossEntropyLoss()
@@ -113,38 +113,38 @@ class FederatedLearning:
         }
 
     async def run_async(self):
-        """异步运行联邦学习过程。"""
+        """Asynchronously run the federated learning process."""
         self.initialize_data()
         self.initialize_model()
 
-        # 开始记录总训练时间
+        # Start recording total training time
         total_start_time = time.time()
 
         for round_num in range(self.num_rounds):
             print(f"Starting round {round_num + 1}...")
 
-            # 开始记录本轮时间
+            # Start recording the time for this round
             round_start_time = time.time()
 
-            # 创建异步任务列表
+            # Create a list of asynchronous tasks
             tasks = []
             for client_id, data_loader in enumerate(self.client_data):
                 print(f"Training client {client_id + 1}...")
                 task = self.train_client_async(self.global_model, data_loader)
                 tasks.append(task)
 
-            # 并发执行所有客户端训练任务
+            # Execute all client training tasks concurrently
             client_models = await asyncio.gather(*tasks)
 
             self.federated_averaging(client_models)
 
-            # 计算本轮时间
+            # Calculate the time for this round
             round_time = time.time() - round_start_time
             self.round_times[f"round_{round_num + 1}"] = round_time
 
             print(f"Round {round_num + 1} completed in {round_time:.2f} seconds.")
 
-        # 计算总训练时间
+        # Calculate the total training time
         self.total_training_time = time.time() - total_start_time
         print(f"\nFederated learning process completed in {self.total_training_time:.2f} seconds.")
         print("\nRound-wise processing times:")

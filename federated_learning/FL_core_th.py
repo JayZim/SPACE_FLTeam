@@ -309,7 +309,7 @@ if __name__ == "__main__":
     """Independent entry point for testing the optimized federated learning"""
     # Default configuration values
     num_rounds = 5
-    num_clients = 3
+    num_clients = 8
 
     # Create a timestamp for a unique output file
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
