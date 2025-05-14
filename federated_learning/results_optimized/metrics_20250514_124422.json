@@ -1,0 +1,18 @@
+{
+    "timestamp": "20250514_124422",
+    "rounds": 5,
+    "clients": 3,
+    "final_accuracy": 98.89,
+    "final_loss": 0.03441779697313905,
+    "training_time": 83.7893009185791,
+    "round_times": {
+        "round_1": 14.962243795394897,
+        "round_2": 14.523327112197876,
+        "round_3": 15.429705142974854,
+        "round_4": 15.375967979431152,
+        "round_5": 15.169488191604614
+    },
+    "average_round_time": 15.09214644432068,
+    "device": "cpu",
+    "memory_usage": null
+}

@@ -151,7 +151,7 @@ if __name__ == "__main__":
     """Standalone entry point for testing FederatedLearning."""
     # Default customization values
     num_rounds = 5
-    num_clients = 3
+    num_clients = 8
     model_type = "SimpleCNN"
     data_set = "MNIST"
 
