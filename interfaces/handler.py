@@ -1,3 +1,22 @@
+"""
+Filename: handler.py
+Description: Handler interface for all component input classes intended to parse data from an expected format. 
+Author: Nicholas Paul Candra
+Date: 2025-05-14
+Version: 1.0
+Python Version: 
+
+Changelog:
+- 2024-06-29: Initial creation.
+
+Usage: 
+Implement this interface by assigning this type to a derived class and defining parse_input() method.
+Example:
+    class SpecialHandler(Handler)
+        parse_input(file):
+            # functionality here
+"""
+
 import abc
 import os
 import pandas as pd
@@ -31,3 +50,4 @@ class Handler(abc.ABC):
             return True
         except Exception as e:
             raise ValueError(f"Error parsing FLAM file: {str(e)}")
+
