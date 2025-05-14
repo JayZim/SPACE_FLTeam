@@ -2,8 +2,7 @@
 Filename: algorithm_core.py
 Description: Manage FLOMPS algorithm processes. 
 Initial Creator: Elysia Guglielmo (System Architect)
-Author: Yuganya Perumal
-Author: Stephen ZENG
+Author: Yuganya Perumal,Stephen ZENG
 Date: 2025-05-14
 Version: 1.0
 Python Version: 3.10
