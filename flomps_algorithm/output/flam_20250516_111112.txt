@@ -1,0 +1,8 @@
+                                    time_stamp  satellite_count satellite_server aggregator_flag federatedlearning_adjacencymatrix
+     2025-01-06T00:00:00  #Partially connected                3      Satellite 2            True [[0, 1, 0], [1, 0, 1], [0, 1, 0]]
+         2025-01-06T00:30:00  #Fully connected                3      Satellite 1            True [[0, 1, 1], [1, 0, 1], [1, 1, 0]]
+2025-01-06T01:00:00 #Unidirectional connection                3      Satellite 3            True [[0, 0, 1], [0, 0, 0], [1, 0, 0]]
+     2025-01-06T01:30:00 #Symmetric connection                3      Satellite 2            True [[0, 1, 0], [1, 0, 1], [0, 1, 0]]
+     2025-01-06T02:00:00 #Connectionless state                3             None            None [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+       2025-01-06T02:30:00 #Disconnected state                3      Satellite 1            True [[1, 0, 0], [0, 0, 0], [0, 0, 0]]
+                           2025-01-06T02:30:00                3      Satellite 3            True [[0, 0, 0], [0, 0, 0], [0, 0, 1]]
