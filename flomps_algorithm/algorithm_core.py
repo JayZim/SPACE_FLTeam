@@ -32,6 +32,7 @@ class Algorithm():
         self.output = AlgorithmOutput()
         self.selection_counts = None
         self.output_to_file = True
+        self.algorithm_output_data = None  # Store algorithm output data
 
         # Sam's algorithm parameters
         self.toggle_chance = 0.1  # Default toggle chance for connection evolution
@@ -66,6 +67,10 @@ class Algorithm():
 
     def set_output_to_file(self, output_to_file):
         self.output_to_file = output_to_file
+
+    def get_algorithm_output(self):
+        """Get algorithm output data, for workflow use"""
+        return self.algorithm_output_data
 
     def set_algorithm_parameters(self, toggle_chance=0.1, training_time=3, down_bias=2.0):
         """Set parameters for Sam's algorithm"""
@@ -198,6 +203,9 @@ class Algorithm():
                     self.training_counter = 0
                     self.in_training = True
                     print(f" Starting Round {self.round_number} | New Target Node: {self.target_node}")
+
+        # Store the algorithm output data for external access
+        self.algorithm_output_data = algorithm_output
 
         if self.output_to_file:
             self.output.write_to_file(algorithm_output)  # write to file.

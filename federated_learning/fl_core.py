@@ -30,118 +30,145 @@ import os
 import time
 import threading
 from datetime import datetime
+import glob
+from torch.utils.data import DataLoader, Subset, random_split
+import torchvision
 
 # Add the project root directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from federated_learning.fl_output import FLOutput
 from federated_learning.fl_visualization import FLVisualization
 
+# Add path manager for universal path handling
+try:
+    from utilities.path_manager import get_synth_flams_dir
+    use_path_manager = True
+except ImportError:
+    use_path_manager = False
+
 class FederatedLearning:
     """Custom Federated Learning engine."""
 
     def __init__(self):
-        self.num_rounds = None
-        self.num_clients = None
+        self.num_rounds = 10
+        self.num_clients = 5
         self.global_model = None
         self.client_data = []
         self.round_times = {}
-        self.total_training_time = 0
         self.round_accuracies = []
-        self.timestep = 0  # Global timestep counter
+        self.total_training_time = 0
+        self.timestep = 0
 
     def set_num_rounds(self, rounds: int) -> None:
+        """Set the number of federated learning rounds."""
         self.num_rounds = rounds
-        print(f"Number of rounds set to: {self.num_rounds}")
 
     def set_num_clients(self, clients: int) -> None:
+        """Set the number of clients participating in federated learning."""
         self.num_clients = clients
-        print(f"Number of clients set to: {self.num_clients}")
 
     def set_model(self, model):
-        """Set the model for federated learning (compatibility method)."""
-        print(f"Model configuration received: {model}")
-        # This method exists for compatibility with the config system
-        # The actual model is initialized internally in initialize_model()
+        """Set the model architecture for federated learning."""
+        self.global_model = model
 
     def set_topology(self, matrix, aggregator_id):
-        """Set the network topology and aggregator for federated learning."""
-        print(f"Setting topology with aggregator ID: {aggregator_id}")
-        # Store topology information for later use
+        """Set network topology for this round"""
         self.current_topology = matrix
         self.current_aggregator = aggregator_id
 
     def reset_clients(self):
-        """Reset client data (compatibility method)."""
-        print("Resetting clients...")
-        # This method exists for compatibility with FL handler
-        # Client data is managed internally
+        """Reset client data for new simulation run."""
+        self.client_data = []
+        self.round_times = {}
+        self.round_accuracies = []
+        self.total_training_time = 0
+        self.timestep = 0
 
     def initialize_data(self):
-        """Split dataset among clients."""
-        transform = transforms.Compose([transforms.ToTensor()])
-        dataset = datasets.MNIST('~/.pytorch/MNIST_data/', download=True, train=True, transform=transform)
-        for i in range(self.num_clients):
-            start = i * (len(dataset) // self.num_clients)
-            end = (i + 1) * (len(dataset) // self.num_clients)
-            subset = torch.utils.data.Subset(dataset, range(start, end))
-            client_loader = torch.utils.data.DataLoader(subset, batch_size=32, shuffle=True, num_workers=2)
-            self.client_data.append(client_loader)
-        print("Client data initialized.")
+        """Initialize client data loaders"""
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
+        full_dataset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+        
+        # Split dataset among clients
+        client_datasets = random_split(full_dataset, [len(full_dataset) // self.num_clients] * self.num_clients)
+        self.client_data = [DataLoader(dataset, batch_size=32, shuffle=True) for dataset in client_datasets]
 
     def initialize_model(self):
-        """Define a simple PyTorch model."""
+        """Initialize the global model"""
         class SimpleModel(nn.Module):
             def __init__(self):
                 super(SimpleModel, self).__init__()
-                self.fc = nn.Linear(28 * 28, 10)
+                self.fc = nn.Linear(784, 10)
 
             def forward(self, x):
-                x = x.view(-1, 28 * 28)
+                x = x.view(x.size(0), -1)
                 return self.fc(x)
-
+        
         self.global_model = SimpleModel()
-        print("Global model initialized.")
 
     def train_client(self, model, data_loader):
-        """Train a single client."""
-        model.train()
-        optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=1e-4)
+        """Train a client model on local data"""
         criterion = nn.CrossEntropyLoss()
+        optimizer = optim.SGD(model.parameters(), lr=0.01)
+        
         correct = 0
         total = 0
-
-        for data, target in data_loader:
-            optimizer.zero_grad()
-            output = model(data)
-            loss = criterion(output, target)
-            loss.backward()
-            optimizer.step()
-
-            # Calculate accuracy
-            _, predicted = torch.max(output, 1)
-            correct += (predicted == target).sum().item()
-            total += target.size(0)
-
+        for _ in range(3):  # Local epochs
+            for batch_idx, (data, target) in enumerate(data_loader):
+                optimizer.zero_grad()
+                output = model(data)
+                loss = criterion(output, target)
+                loss.backward()
+                optimizer.step()
+                
+                # Calculate accuracy for this batch
+                _, predicted = torch.max(output.data, 1)
+                total += target.size(0)
+                correct += (predicted == target).sum().item()
+        
         accuracy = correct / total if total > 0 else 0
         return model.state_dict(), accuracy
 
     def federated_averaging(self, client_models: List[dict]):
-        """Aggregate client models into a global model."""
-        global_state = self.global_model.state_dict()
-        for key in global_state.keys():
-            global_state[key] = torch.stack([client[key] for client in client_models], dim=0).mean(dim=0)
-        self.global_model.load_state_dict(global_state)
-        print("Global model updated via federated averaging.")
+        """Perform federated averaging to update the global model."""
+        global_dict = self.global_model.state_dict()
+        for key in global_dict.keys():
+            global_dict[key] = torch.stack([client_model[key].float() for client_model in client_models], 0).mean(0)
+        self.global_model.load_state_dict(global_dict)
 
     def get_round_metrics(self) -> Dict:
-        """Get metrics for the current training session."""
-        return {
-            "round_times": self.round_times,
-            "round_accuracies": self.round_accuracies,
-            "total_training_time": self.total_training_time,
-            "average_round_time": self.total_training_time / self.num_rounds if self.num_rounds > 0 else 0,
-            "timestamp": datetime.now().isoformat()
-        }
+        """Return round metrics for analysis"""
+        return self.round_times
+    
+    def get_latest_flam_file(self):
+        """Get the latest generated FLAM file path"""
+        if use_path_manager:
+            csv_dir = get_synth_flams_dir()
+            csv_files = list(csv_dir.glob("flam_*.csv"))
+        else:
+            # Use backup path
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            csv_dir_str = os.path.join(script_dir, "..", "synth_FLAMs")
+            if os.path.exists(csv_dir_str):
+                csv_files = [os.path.join(csv_dir_str, f) for f in os.listdir(csv_dir_str) 
+                           if f.startswith('flam_') and f.endswith('.csv')]
+            else:
+                csv_files = []
+        
+        if not csv_files:
+            raise FileNotFoundError("No FLAM files found in synth_FLAMs directory")
+        
+        # Return the most recently created file
+        if use_path_manager:
+            latest_file = max(csv_files, key=lambda x: x.stat().st_ctime)
+            return str(latest_file)
+        else:
+            latest_file = max(csv_files, key=lambda x: os.path.getctime(x))
+            return latest_file
+
     def run_flam_round(self, flam_entry):
         """Run a single FLAM-based round step based on the phase."""
         phase = flam_entry.get("phase", "TRAINING")
@@ -182,6 +209,7 @@ class FederatedLearning:
                 del self._pending_round_correct
                 del self._pending_round_total
                 del self._pending_round_start_time
+                
     def load_flam_schedule(self, flam_path):
         """Parse FLAM CSV and return a list of dicts with timestep, phase, etc."""
         schedule = []
@@ -209,8 +237,17 @@ class FederatedLearning:
         total_start_time = time.time()
         round_accuracies = []
 
-        # Load FLAM schedule if provided
+        # Load FLAM schedule - auto-detect latest if not provided
         flam_schedule = []
+        if flam_path is None:
+            try:
+                flam_path = self.get_latest_flam_file()
+                print(f"[INFO] Auto-detected latest FLAM file: {os.path.basename(flam_path)}")
+            except FileNotFoundError as e:
+                print(f"[ERROR] {e}")
+                print("[INFO] Running without FLAM schedule...")
+                return
+        
         if flam_path:
             flam_schedule = self.load_flam_schedule(flam_path)
             print(f"Loaded FLAM schedule with {len(flam_schedule)} timesteps.")
@@ -311,8 +348,9 @@ if __name__ == "__main__":
     fl_instance = FederatedLearning()
     fl_instance.set_num_rounds(num_rounds)
     fl_instance.set_num_clients(num_clients)
-    flam_path = os.path.join(os.path.dirname(__file__), "../synth_FLAMs/flam_4n_100t_flomps_2025-06-03_15-15-29.csv")
-    fl_instance.run(flam_path=flam_path)
+    
+    # Let it auto-detect the latest FLAM file instead of hardcoding
+    fl_instance.run(flam_path=None)
 
     # Evaluate the model
     output = FLOutput()

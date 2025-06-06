@@ -248,7 +248,12 @@ if __name__ == "__main__":
             # --- Simulation Workflows --- #
 
             if args.command == 'flomps':
-                flomps.run(input_file, options)
+                # Extract custom parameters if provided
+                timesteps = getattr(args, 'timesteps', None)
+                custom_duration = getattr(args, 'custom_duration', None)
+                
+                # Pass custom parameters to FLOMPS workflow
+                flomps.run(input_file, options, timesteps=timesteps, custom_duration=custom_duration)
 
             # Continue if statements here for additional workflows...
 

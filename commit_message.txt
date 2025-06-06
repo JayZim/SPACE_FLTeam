@@ -1,0 +1,32 @@
+feat: Enhanced FLOMPS simulation with improved time display format and custom timesteps
+
+Major Features:
+• 🌐 Converted 100T_FLAM_GUIDE.md to English-only documentation
+• ⏰ Enhanced time display format: "Time: YYYY-MM-DD HH:MM:SS, Timestep: X, Round: Y, Target Node: Z, Phase: W"
+• 🔧 Added custom timesteps support via main.py CLI arguments (--timesteps, --custom-duration)
+• 📅 Updated default simulation dates to current timeframe (2025-01-07)
+
+Core Changes:
+• federated_learning/fl_handler.py: Modified display format for better time visualization
+• flomps_algorithm/algorithm_output.py: Updated FLAM file generation to include actual timestamps
+• workflows/flomps.py: Added custom timesteps logic with automatic time calculation
+• cli_args.py: Added --timesteps and --custom-duration CLI parameters
+• main.py: Enhanced to pass custom parameters to FLOMPS workflow
+• options.json: Updated start time to current date and timestep precision
+
+Compatibility:
+• Backward compatible FLAM file parsing (supports both old and new formats)
+• Enhanced FL Handler with dual-format support
+• Auto-detection of latest FLAM files maintained
+
+Testing:
+• Verified 3, 5, 10, 20, 100+ timestep generations
+• Confirmed FL Core auto-detection functionality
+• Validated complete SatSim → Algorithm → FL pipeline
+• All integration tests passing
+
+Usage Examples:
+python main.py flomps TLEs/SatCount4.tle --timesteps 100
+python main.py flomps TLEs/SatCount4.tle --custom-duration 01:40:00
+
+Files Modified: 8 core files, Generated: comprehensive test suites and documentation 

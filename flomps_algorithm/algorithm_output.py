@@ -152,8 +152,8 @@ class AlgorithmOutput(Output):
                 target_node = data.get('target_node', 0)
                 phase = data.get('phase', 'TRAINING')
 
-                # Write header line in Sam's format
-                f.write(f"Timestep: {timestep}, Round: {round_num}, "
+                # Write header line with Time first, then Timestep number
+                f.write(f"Time: {time_stamp}, Timestep: {timestep}, Round: {round_num}, "
                        f"Target Node: {target_node}, Phase: {phase}\n")
 
                 # Write matrix rows

@@ -1,8 +1,8 @@
 {
     "sat_sim": {
-        "start_time": "2025-06-05 01:00:00",
-        "end_time": "2025-06-05 01:10:00",
-        "timestep": 60,
+        "start_time": "2025-01-07 00:00:00",
+        "end_time": "2025-01-07 01:40:00",
+        "timestep": 1,
         "output_file_type": "txt",
         "ground_station": {
             "location": {
@@ -21,8 +21,8 @@
         }
     },
     "federated_learning": {
-        "num_rounds": 3,
-        "num_clients": 40,
+        "num_rounds": 5,
+        "num_clients": 4,
         "model_type": "SimpleCNN",
         "data_set": "MNIST",
         "tick": {

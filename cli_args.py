@@ -46,6 +46,10 @@ def setup_flomps_parser(parser):
         parser.add_argument('--algorithm-only', action='store_true', help="Run the Algorithm standalone. Requires an Adjacency Matrices (.am) file.")
         parser.add_argument('--fl-only', action='store_true', help="Run the Federated Learning standalone. Requires a Federated Learning Adjacency Matrices (.flam) file.")
         parser.add_argument('--model-only', action='store_true', help="Run the ML model standalone.")
+        
+        # Global workflow options
+        parser.add_argument('--timesteps', type=int, help='Number of timesteps to generate for the simulation (default: from options.json)')
+        parser.add_argument('--custom-duration', type=str, help='Custom simulation duration in format HH:MM:SS (e.g., 01:40:00 for 100 minutes)')
 
     # Bundle FLOMPS parser
     add_positional_args(parser)

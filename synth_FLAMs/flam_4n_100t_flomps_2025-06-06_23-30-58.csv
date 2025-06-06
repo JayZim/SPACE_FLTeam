@@ -1,0 +1,600 @@
+Time: 2025-01-07 00:00:00, Timestep: 1, Round: 1, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:01:00, Timestep: 2, Round: 1, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:02:00, Timestep: 3, Round: 1, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:03:00, Timestep: 4, Round: 1, Target Node: 2, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,0
+1,0,0,0
+
+Time: 2025-01-07 00:04:00, Timestep: 5, Round: 1, Target Node: 2, Phase: TRANSMITTING
+0,0,1,1
+0,0,1,0
+1,1,0,1
+1,0,1,0
+
+Time: 2025-01-07 00:05:00, Timestep: 6, Round: 2, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:06:00, Timestep: 7, Round: 2, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:07:00, Timestep: 8, Round: 2, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:08:00, Timestep: 9, Round: 2, Target Node: 2, Phase: TRANSMITTING
+0,0,1,1
+0,0,1,0
+1,1,0,0
+1,0,0,0
+
+Time: 2025-01-07 00:09:00, Timestep: 10, Round: 3, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:10:00, Timestep: 11, Round: 3, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:11:00, Timestep: 12, Round: 3, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:12:00, Timestep: 13, Round: 3, Target Node: 2, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,0
+1,0,0,0
+
+Time: 2025-01-07 00:13:00, Timestep: 14, Round: 3, Target Node: 2, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,0
+1,0,0,0
+
+Time: 2025-01-07 00:14:00, Timestep: 15, Round: 3, Target Node: 2, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,0
+1,0,0,0
+
+Time: 2025-01-07 00:15:00, Timestep: 16, Round: 3, Target Node: 2, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,0
+1,0,0,0
+
+Time: 2025-01-07 00:16:00, Timestep: 17, Round: 3, Target Node: 2, Phase: TRANSMITTING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:17:00, Timestep: 18, Round: 3, Target Node: 2, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,1
+0,1,0,0
+1,1,0,0
+
+Time: 2025-01-07 00:18:00, Timestep: 19, Round: 4, Target Node: 1, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:19:00, Timestep: 20, Round: 4, Target Node: 1, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:20:00, Timestep: 21, Round: 4, Target Node: 1, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:21:00, Timestep: 22, Round: 4, Target Node: 1, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,0
+1,0,0,0
+
+Time: 2025-01-07 00:22:00, Timestep: 23, Round: 4, Target Node: 1, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,1
+1,0,1,0
+
+Time: 2025-01-07 00:23:00, Timestep: 24, Round: 5, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:24:00, Timestep: 25, Round: 5, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:25:00, Timestep: 26, Round: 5, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:26:00, Timestep: 27, Round: 5, Target Node: 3, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,0
+1,0,0,0
+
+Time: 2025-01-07 00:27:00, Timestep: 28, Round: 5, Target Node: 3, Phase: TRANSMITTING
+0,0,0,0
+0,0,1,0
+0,1,0,1
+0,0,1,0
+
+Time: 2025-01-07 00:28:00, Timestep: 29, Round: 5, Target Node: 3, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,1
+1,0,1,0
+
+Time: 2025-01-07 00:29:00, Timestep: 30, Round: 6, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:30:00, Timestep: 31, Round: 6, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:31:00, Timestep: 32, Round: 6, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:32:00, Timestep: 33, Round: 6, Target Node: 3, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,1
+1,0,1,0
+
+Time: 2025-01-07 00:33:00, Timestep: 34, Round: 7, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:34:00, Timestep: 35, Round: 7, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:35:00, Timestep: 36, Round: 7, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:36:00, Timestep: 37, Round: 7, Target Node: 3, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,1
+1,0,1,0
+
+Time: 2025-01-07 00:37:00, Timestep: 38, Round: 8, Target Node: 1, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:38:00, Timestep: 39, Round: 8, Target Node: 1, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:39:00, Timestep: 40, Round: 8, Target Node: 1, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:40:00, Timestep: 41, Round: 8, Target Node: 1, Phase: TRANSMITTING
+0,0,0,0
+0,0,1,0
+0,1,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:41:00, Timestep: 42, Round: 8, Target Node: 1, Phase: TRANSMITTING
+0,0,0,0
+0,0,1,0
+0,1,0,1
+0,0,1,0
+
+Time: 2025-01-07 00:42:00, Timestep: 43, Round: 8, Target Node: 1, Phase: TRANSMITTING
+0,0,0,0
+0,0,0,0
+0,0,0,1
+0,0,1,0
+
+Time: 2025-01-07 00:43:00, Timestep: 44, Round: 8, Target Node: 1, Phase: TRANSMITTING
+0,0,0,0
+0,0,0,0
+0,0,0,1
+0,0,1,0
+
+Time: 2025-01-07 00:44:00, Timestep: 45, Round: 8, Target Node: 1, Phase: TRANSMITTING
+0,0,0,0
+0,0,0,0
+0,0,0,1
+0,0,1,0
+
+Time: 2025-01-07 00:45:00, Timestep: 46, Round: 8, Target Node: 1, Phase: TRANSMITTING
+0,0,0,1
+0,0,0,0
+0,0,0,1
+1,0,1,0
+
+Time: 2025-01-07 00:46:00, Timestep: 47, Round: 8, Target Node: 1, Phase: TRANSMITTING
+0,0,0,0
+0,0,1,0
+0,1,0,1
+0,0,1,0
+
+Time: 2025-01-07 00:47:00, Timestep: 48, Round: 8, Target Node: 1, Phase: TRANSMITTING
+0,0,1,0
+0,0,1,0
+1,1,0,1
+0,0,1,0
+
+Time: 2025-01-07 00:48:00, Timestep: 49, Round: 9, Target Node: 0, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:49:00, Timestep: 50, Round: 9, Target Node: 0, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:50:00, Timestep: 51, Round: 9, Target Node: 0, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:51:00, Timestep: 52, Round: 9, Target Node: 0, Phase: TRANSMITTING
+0,1,0,0
+1,0,1,0
+0,1,0,1
+0,0,1,0
+
+Time: 2025-01-07 00:52:00, Timestep: 53, Round: 10, Target Node: 0, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:53:00, Timestep: 54, Round: 10, Target Node: 0, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:54:00, Timestep: 55, Round: 10, Target Node: 0, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:55:00, Timestep: 56, Round: 10, Target Node: 0, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,1
+0,1,0,0
+1,1,0,0
+
+Time: 2025-01-07 00:56:00, Timestep: 57, Round: 11, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:57:00, Timestep: 58, Round: 11, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:58:00, Timestep: 59, Round: 11, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 00:59:00, Timestep: 60, Round: 11, Target Node: 2, Phase: TRANSMITTING
+0,1,0,1
+1,0,1,0
+0,1,0,0
+1,0,0,0
+
+Time: 2025-01-07 01:00:00, Timestep: 61, Round: 12, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:01:00, Timestep: 62, Round: 12, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:02:00, Timestep: 63, Round: 12, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:03:00, Timestep: 64, Round: 12, Target Node: 3, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,0
+1,0,0,0
+
+Time: 2025-01-07 01:04:00, Timestep: 65, Round: 12, Target Node: 3, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,0
+1,0,0,0
+
+Time: 2025-01-07 01:05:00, Timestep: 66, Round: 12, Target Node: 3, Phase: TRANSMITTING
+0,0,0,1
+0,0,0,0
+0,0,0,1
+1,0,1,0
+
+Time: 2025-01-07 01:06:00, Timestep: 67, Round: 12, Target Node: 3, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,0
+1,0,0,0
+
+Time: 2025-01-07 01:07:00, Timestep: 68, Round: 12, Target Node: 3, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,1
+1,0,1,0
+
+Time: 2025-01-07 01:08:00, Timestep: 69, Round: 13, Target Node: 0, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:09:00, Timestep: 70, Round: 13, Target Node: 0, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:10:00, Timestep: 71, Round: 13, Target Node: 0, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:11:00, Timestep: 72, Round: 13, Target Node: 0, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,0
+1,0,0,0
+
+Time: 2025-01-07 01:12:00, Timestep: 73, Round: 13, Target Node: 0, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,0
+1,0,0,0
+
+Time: 2025-01-07 01:13:00, Timestep: 74, Round: 13, Target Node: 0, Phase: TRANSMITTING
+0,1,0,1
+1,0,1,0
+0,1,0,0
+1,0,0,0
+
+Time: 2025-01-07 01:14:00, Timestep: 75, Round: 14, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:15:00, Timestep: 76, Round: 14, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:16:00, Timestep: 77, Round: 14, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:17:00, Timestep: 78, Round: 14, Target Node: 3, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,1
+0,1,0,1
+1,1,1,0
+
+Time: 2025-01-07 01:18:00, Timestep: 79, Round: 15, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:19:00, Timestep: 80, Round: 15, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:20:00, Timestep: 81, Round: 15, Target Node: 3, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:21:00, Timestep: 82, Round: 15, Target Node: 3, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,1
+1,0,1,0
+
+Time: 2025-01-07 01:22:00, Timestep: 83, Round: 16, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:23:00, Timestep: 84, Round: 16, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:24:00, Timestep: 85, Round: 16, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:25:00, Timestep: 86, Round: 16, Target Node: 2, Phase: TRANSMITTING
+0,1,0,0
+1,0,1,0
+0,1,0,1
+0,0,1,0
+
+Time: 2025-01-07 01:26:00, Timestep: 87, Round: 17, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:27:00, Timestep: 88, Round: 17, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:28:00, Timestep: 89, Round: 17, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:29:00, Timestep: 90, Round: 17, Target Node: 2, Phase: TRANSMITTING
+0,0,0,1
+0,0,1,0
+0,1,0,1
+1,0,1,0
+
+Time: 2025-01-07 01:30:00, Timestep: 91, Round: 18, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:31:00, Timestep: 92, Round: 18, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:32:00, Timestep: 93, Round: 18, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:33:00, Timestep: 94, Round: 18, Target Node: 2, Phase: TRANSMITTING
+0,0,0,0
+0,0,1,0
+0,1,0,1
+0,0,1,0
+
+Time: 2025-01-07 01:34:00, Timestep: 95, Round: 18, Target Node: 2, Phase: TRANSMITTING
+0,0,0,1
+0,0,0,0
+0,0,0,1
+1,0,1,0
+
+Time: 2025-01-07 01:35:00, Timestep: 96, Round: 18, Target Node: 2, Phase: TRANSMITTING
+0,1,0,0
+1,0,1,1
+0,1,0,0
+0,1,0,0
+
+Time: 2025-01-07 01:36:00, Timestep: 97, Round: 19, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:37:00, Timestep: 98, Round: 19, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:38:00, Timestep: 99, Round: 19, Target Node: 2, Phase: TRAINING
+0,0,0,0
+0,0,0,0
+0,0,0,0
+0,0,0,0
+
+Time: 2025-01-07 01:39:00, Timestep: 100, Round: 19, Target Node: 2, Phase: TRANSMITTING
+0,0,0,0
+0,0,1,0
+0,1,0,1
+0,0,1,0
+

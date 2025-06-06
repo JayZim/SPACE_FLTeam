@@ -136,10 +136,20 @@ class AlgorithmHandler(Handler):
 
     def parse_data(self, data):
         if data is None:
-            raise ValueError("No incoming Adjacency Martix, unable to proceed.")
+            raise ValueError("No incoming Adjacency Matrix, unable to proceed.")
         else:
-            self.adjacency_matrices = data.matrices 
-            self.sat_names = data.satellite_names 
+            # Handle different types of input data
+            if hasattr(data, 'matrices') and hasattr(data, 'satellite_names'):
+                # SatSimResult object
+                self.adjacency_matrices = data.matrices 
+                self.sat_names = data.satellite_names 
+            elif isinstance(data, list):
+                # Direct list of adjacency matrices
+                self.adjacency_matrices = data
+                self.sat_names = []  # Will be auto-generated
+            else:
+                raise ValueError(f"Unsupported data type: {type(data)}")
+                
             if self.validate_adjacency_matrices(self.adjacency_matrices):
                 if not self.sat_names:
                     no_of_rows = self.adjacency_matrices[0][1].shape[0]
