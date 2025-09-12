@@ -76,19 +76,36 @@ class FLOutput(Output):
 
         # Initialize test dataset if not provided
         if test_dataset is None:
-            transform = transforms.Compose([transforms.ToTensor()])
-            self.test_dataset = datasets.MNIST('~/.pytorch/MNIST_data/',
-                                              download=True,
-                                              train=False,
-                                              transform=transform)
+            transform = transforms.Compose([
+                transforms.ToTensor(),
+                # If you normalized in training, use the same stats here.
+                # transforms.Normalize(mean=[0.3443, 0.3804, 0.4086], std=[0.1814, 0.1535, 0.1311])
+            ])
+            self.test_dataset = datasets.EuroSAT('~/.pytorch/EuroSAT/', download=True,
+                                                transform=transform)
             self.test_loader = DataLoader(self.test_dataset,
-                                         batch_size=self.batch_size,
-                                         shuffle=False)
+                                        batch_size=self.batch_size,
+                                        shuffle=False)
         else:
             self.test_dataset = test_dataset
             self.test_loader = DataLoader(self.test_dataset,
-                                         batch_size=self.batch_size,
-                                         shuffle=False)
+                                        batch_size=self.batch_size,
+                                        shuffle=False)
+        # Original Code for Safety Concern
+        # if test_dataset is None:
+        #     transform = transforms.Compose([transforms.ToTensor()])
+        #     self.test_dataset = datasets.MNIST('~/.pytorch/MNIST_data/',
+        #                                       download=True,
+        #                                       train=False,
+        #                                       transform=transform)
+        #     self.test_loader = DataLoader(self.test_dataset,
+        #                                  batch_size=self.batch_size,
+        #                                  shuffle=False)
+        # else:
+        #     self.test_dataset = test_dataset
+        #     self.test_loader = DataLoader(self.test_dataset,
+        #                                  batch_size=self.batch_size,
+        #                                  shuffle=False)
 
         print(f"FLOutput initialized with {len(self.test_dataset)} test samples")
 

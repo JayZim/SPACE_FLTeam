@@ -21,7 +21,7 @@
         }
     },
     "federated_learning": {
-        "num_rounds": 5,
+        "num_rounds": 3,
         "num_clients": 4,
         "model_type": "SimpleCNN",
         "data_set": "MNIST",
@@ -44,6 +44,32 @@
         },
         "module_settings": {
             "output_to_file": true
+        },
+        "model_evaluation": {
+            "enable_auto_selection": true,
+            "evaluation": {
+                "num_epochs": 3,
+                "batch_size": 32,
+                "learning_rate": 0.001,
+                "device": "cpu",
+                "evaluation_timeout": 300,
+                "memory_limit_mb": 1000,
+                "convergence_threshold": 0.001,
+                "stability_window": 5
+            },
+            "selection": {
+                "selection_criteria": "overall",
+                "enable_constraints": true,
+                "max_memory_mb": 100,
+                "max_complexity": "Medium",
+                "preferred_categories": ["CNN", "ResNet"],
+                "min_accuracy_threshold": 0.8,
+                "max_training_time": 60
+            },
+            "save_evaluation_reports": true,
+            "report_directory": "model_evaluation_reports",
+            "enable_custom_models": true,
+            "custom_model_directory": "custom_models"
         }
     }
 }

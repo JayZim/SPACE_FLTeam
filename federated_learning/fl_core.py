@@ -13,6 +13,7 @@ Changelog:
 - 2024-09-16: Offloaded Model Manger to model.py, Refactored Standalone
 - 2025-05-07: Remade file: Added TensorFlow + PyTorch conversion and saving functionality. Removed all Flower functionality
 - 2025-05-09: Added processing time tracking for rounds and overall training
+- 2025-10-04: Integrated FLAM file parsing and dynamic topology adaptation
 
 Usage:
 Run this file directly to start a Multithreading instance of Tensorflow FL with the chosen number of clients rounds and model.
@@ -33,11 +34,13 @@ from datetime import datetime
 import glob
 from torch.utils.data import DataLoader, Subset, random_split
 import torchvision
+import re
 
 # Add the project root directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from federated_learning.fl_output import FLOutput
 from federated_learning.fl_visualization import FLVisualization
+from federated_learning.model_evaluation import EnhancedModelEvaluationModule
 
 # Add path manager for universal path handling
 try:
@@ -49,7 +52,56 @@ except ImportError:
 class FederatedLearning:
     """Custom Federated Learning engine."""
 
-    def __init__(self):
+    # --- Parameter Server Object (Inner Class) ---
+    class ParameterServer:
+        def __init__(self, model):
+            self.global_model = model
+            self.updates = []
+
+        def receive_update(self, client_state_dict):
+            self.updates.append(client_state_dict)
+
+        def aggregate(self):
+            if not self.updates:
+                return
+            global_dict = self.global_model.state_dict()
+            for key in global_dict.keys():
+                global_dict[key] = torch.stack([update[key].float() for update in self.updates], 0).mean(0)
+            self.global_model.load_state_dict(global_dict)
+            self.updates = []
+
+        def get_global_model(self):
+            return self.global_model
+
+    # --- Client Object (Inner Class) ---
+    class Client:
+        def __init__(self, client_id, model, data_loader):
+            self.client_id = client_id
+            self.model = model
+            self.data_loader = data_loader
+
+        def train(self, epochs=3):
+            criterion = nn.CrossEntropyLoss()
+            optimizer = optim.SGD(self.model.parameters(), lr=0.01)
+            correct = 0
+            total = 0
+            for _ in range(epochs):
+                for data, target in self.data_loader:
+                    optimizer.zero_grad()
+                    output = self.model(data)
+                    loss = criterion(output, target)
+                    loss.backward()
+                    optimizer.step()
+                    _, predicted = torch.max(output.data, 1)
+                    total += target.size(0)
+                    correct += (predicted == target).sum().item()
+            accuracy = correct / total if total > 0 else 0
+            return self.model.state_dict(), accuracy
+
+        def update_model(self, global_state_dict):
+            self.model.load_state_dict(global_state_dict)
+
+    def __init__(self, enable_model_evaluation=True):
         self.num_rounds = 10
         self.num_clients = 5
         self.global_model = None
@@ -57,7 +109,19 @@ class FederatedLearning:
         self.round_times = {}
         self.round_accuracies = []
         self.total_training_time = 0
-        self.timestep = 0
+        self.model_evaluation_enabled = enable_model_evaluation
+        self.model_eval_module = None
+        self.selected_model_name = None
+        self.model_evaluation_history = []
+        
+        # Initialize model evaluation module if enabled
+        if self.model_evaluation_enabled:
+            try:
+                self.model_eval_module = EnhancedModelEvaluationModule()
+                print("✓ Model evaluation module initialized")
+            except Exception as e:
+                print(f"Warning: Failed to initialize model evaluation module: {e}")
+                self.model_evaluation_enabled = False
 
     def set_num_rounds(self, rounds: int) -> None:
         """Set the number of federated learning rounds."""
@@ -96,8 +160,109 @@ class FederatedLearning:
         client_datasets = random_split(full_dataset, [len(full_dataset) // self.num_clients] * self.num_clients)
         self.client_data = [DataLoader(dataset, batch_size=32, shuffle=True) for dataset in client_datasets]
 
-    def initialize_model(self):
-        """Initialize the global model"""
+    def initialize_model(self, model_name=None, auto_select=True, interactive_mode=True):
+        """Initialize the global model with optional model selection"""
+        if self.model_evaluation_enabled and auto_select and model_name is None:
+            try:
+                # Show available models and let user choose
+                if interactive_mode:
+                    available_models = self.model_eval_module.registry.list_models()
+                    print(f"\n{'='*60}")
+                    print("Available Models for Federated Learning:")
+                    print(f"{'='*60}")
+                    
+                    for i, model in enumerate(available_models, 1):
+                        model_info = self.model_eval_module.registry.get_model(model)
+                        print(f"{i}. {model}")
+                        print(f"   Description: {model_info.description}")
+                        print(f"   Category: {model_info.category}, Complexity: {model_info.complexity}")
+                        print()
+                    
+                    print(f"{len(available_models) + 1}. Auto-select best model")
+                    print(f"{len(available_models) + 2}. Use default model")
+                    print(f"{'='*60}")
+                    
+                    while True:
+                        try:
+                            choice = input(f"Please select a model (1-{len(available_models) + 2}): ").strip()
+                            choice_num = int(choice)
+                            
+                            if 1 <= choice_num <= len(available_models):
+                                # User selected a specific model
+                                selected_model_name = available_models[choice_num - 1]
+                                model_info = self.model_eval_module.registry.get_model(selected_model_name)
+                                self.global_model = model_info.model_class(**model_info.parameters)
+                                self.selected_model_name = selected_model_name
+                                print(f"✓ Using selected model: {selected_model_name}")
+                                break
+                            elif choice_num == len(available_models) + 1:
+                                # User chose auto-select
+                                if self.client_data:
+                                    criterion = nn.CrossEntropyLoss()
+                                    selected_name, selected_model = self.model_eval_module.select_model_for_fl(
+                                        self.client_data[0], criterion
+                                    )
+                                    self.selected_model_name = selected_name
+                                    self.global_model = selected_model
+                                    print(f"✓ Auto-selected model: {selected_name}")
+                                else:
+                                    self.global_model = self._create_default_model()
+                                    self.selected_model_name = "DefaultModel"
+                                    print("✓ Using default model (no data available for auto-selection)")
+                                break
+                            elif choice_num == len(available_models) + 2:
+                                # User chose default model
+                                self.global_model = self._create_default_model()
+                                self.selected_model_name = "DefaultModel"
+                                print("✓ Using default model")
+                                break
+                            else:
+                                print(f"Invalid choice. Please enter a number between 1 and {len(available_models) + 2}")
+                        except ValueError:
+                            print("Invalid input. Please enter a number.")
+                        except KeyboardInterrupt:
+                            print("\nOperation cancelled. Using default model.")
+                            self.global_model = self._create_default_model()
+                            self.selected_model_name = "DefaultModel"
+                            break
+                else:
+                    # Non-interactive auto-select
+                    if self.client_data:
+                        criterion = nn.CrossEntropyLoss()
+                        selected_name, selected_model = self.model_eval_module.select_model_for_fl(
+                            self.client_data[0], criterion
+                        )
+                        self.selected_model_name = selected_name
+                        self.global_model = selected_model
+                        print(f"✓ Auto-selected model: {selected_name}")
+                    else:
+                        self.global_model = self._create_default_model()
+                        self.selected_model_name = "DefaultModel"
+            except Exception as e:
+                print(f"Model selection failed: {e}. Using default model.")
+                self.global_model = self._create_default_model()
+                self.selected_model_name = "DefaultModel"
+        elif self.model_evaluation_enabled and model_name:
+            # Use specified model
+            try:
+                model_info = self.model_eval_module.registry.get_model(model_name)
+                if model_info:
+                    self.global_model = model_info.model_class(**model_info.parameters)
+                    self.selected_model_name = model_name
+                    print(f"✓ Using specified model: {model_name}")
+                else:
+                    raise ValueError(f"Model {model_name} not found in registry")
+            except Exception as e:
+                print(f"Failed to use specified model: {e}. Using default model.")
+                self.global_model = self._create_default_model()
+                self.selected_model_name = "DefaultModel"
+        else:
+            # Use default model
+            self.global_model = self._create_default_model()
+            self.selected_model_name = "DefaultModel"
+    
+    def _create_default_model(self):
+        """Create a default model as fallback"""
         class SimpleModel(nn.Module):
             def __init__(self):
                 super(SimpleModel, self).__init__()
@@ -107,7 +272,7 @@ class FederatedLearning:
                 x = x.view(x.size(0), -1)
                 return self.fc(x)
         
-        self.global_model = SimpleModel()
+        return SimpleModel()
 
     def train_client(self, model, data_loader):
         """Train a client model on local data"""
@@ -142,6 +307,51 @@ class FederatedLearning:
     def get_round_metrics(self) -> Dict:
         """Return round metrics for analysis"""
         return self.round_times
+    
+    def get_model_evaluation_summary(self) -> Dict:
+        """Get summary of model evaluation results"""
+        if not self.model_evaluation_enabled:
+            return {"message": "Model evaluation not enabled"}
+        
+        return {
+            "selected_model": self.selected_model_name,
+            "evaluation_history": self.model_evaluation_history,
+            "available_models": self.model_eval_module.registry.list_models() if self.model_eval_module else [],
+            "model_evaluation_enabled": self.model_evaluation_enabled
+        }
+    
+    def enable_model_evaluation(self):
+        """Enable model evaluation functionality"""
+        if not self.model_evaluation_enabled:
+            try:
+                self.model_eval_module = EnhancedModelEvaluationModule()
+                self.model_evaluation_enabled = True
+                print("✓ Model evaluation enabled")
+            except Exception as e:
+                print(f"Failed to enable model evaluation: {e}")
+    
+    def disable_model_evaluation(self):
+        """Disable model evaluation functionality"""
+        self.model_evaluation_enabled = False
+        self.model_eval_module = None
+        print("Model evaluation disabled")
+    
+    def list_available_models(self) -> List[str]:
+        """List all available models in the registry"""
+        if self.model_evaluation_enabled and self.model_eval_module:
+            return self.model_eval_module.registry.list_models()
+        return []
+    
+    def register_custom_model(self, name: str, model_class, parameters: Dict, 
+                            description: str, category: str, complexity: str):
+        """Register a custom model"""
+        if self.model_evaluation_enabled and self.model_eval_module:
+            self.model_eval_module.register_custom_model(
+                name, model_class, parameters, description, category, complexity
+            )
+            print(f"✓ Custom model '{name}' registered")
+        else:
+            print("Model evaluation not enabled. Cannot register custom model.")
     
     def get_latest_flam_file(self):
         """Get the latest generated FLAM file path"""
@@ -210,131 +420,148 @@ class FederatedLearning:
                 del self._pending_round_total
                 del self._pending_round_start_time
                 
-    def load_flam_schedule(self, flam_path):
-        """Parse FLAM CSV and return a list of dicts with timestep, phase, etc."""
-        schedule = []
-        with open(flam_path, "r") as f:
+    # --- FLAM-related code (commented out) ---
+    # The following method and all FLAM schedule/timestep logic are commented out.
+    # They were used to synchronize FL rounds with an external FLAM schedule.
+
+    # def load_flam_schedule(self, flam_path):
+    #     """Parse FLAM CSV and return a list of dicts with timestep, phase, etc."""
+    #     schedule = []
+    #     with open(flam_path, "r") as f:
+    #         lines = f.readlines()
+    #     i = 0
+    #     while i < len(lines):
+    #         line = lines[i].strip()
+    #         if line.startswith("Timestep:"):
+    #             # Parse header
+    #             parts = line.split(", ")
+    #             timestep = int(parts[0].split(":")[1])
+    #             phase = parts[3].split(":")[1].strip()
+    #             schedule.append({"timestep": timestep, "phase": phase})
+    #             # Skip the adjacency matrix (5 lines)
+    #             i += 6
+    #         else:
+    #             i += 1
+    #     return schedule
+
+    # --- End FLAM-related code ---
+
+    @staticmethod
+    def parse_flam_file(flam_path):
+        """
+        Parse the FLAM CSV file and yield a dict for each timestep:
+        {
+            'timestep': int,
+            'round': int,
+            'target_node': int,
+            'phase': str,
+            'connected_sats': List[int],
+            'missing_sats': List[int],
+            'adjacency': List[List[int]]
+        }
+        """
+        with open(flam_path, 'r') as f:
             lines = f.readlines()
+
         i = 0
         while i < len(lines):
             line = lines[i].strip()
-            if line.startswith("Timestep:"):
+            if line.startswith("Time:"):
                 # Parse header
-                parts = line.split(", ")
-                timestep = int(parts[0].split(":")[1])
-                phase = parts[3].split(":")[1].strip()
-                schedule.append({"timestep": timestep, "phase": phase})
-                # Skip the adjacency matrix (5 lines)
-                i += 6
-            else:
-                i += 1
-        return schedule
+                header = line
+                timestep = int(re.search(r'Timestep: (\d+)', header).group(1))
+                round_num = int(re.search(r'Round: (\d+)', header).group(1))
+                target_node = int(re.search(r'Target Node: (\d+)', header).group(1))
+                phase = re.search(r'Phase: ([A-Z]+)', header).group(1)
+                connected_sats = eval(re.search(r'Connected Sats: (\[.*?\])', header).group(1))
+                missing_sats = eval(re.search(r'Missing Sats: (\[.*?\])', header).group(1))
+                adjacency = []
+                for j in range(i+1, i+1+8):  # 8 clients/nodes
+                    adjacency.append([int(x) for x in lines[j].strip().split(',')])
+                yield {
+                    'timestep': timestep,
+                    'round': round_num,
+                    'target_node': target_node,
+                    'phase': phase,
+                    'connected_sats': connected_sats,
+                    'missing_sats': missing_sats,
+                    'adjacency': adjacency
+                }
+                i += 8
+            i += 1
 
-    def run(self, flam_path=None):
-        """Run the federated learning process, synchronized with FLAM phases."""
+
+    def run(self, flam_path=None, model_name=None, auto_select_model=True, interactive_mode=True):
+        """
+        Run the federated learning process using FLAM file for topology and participation.
+        """
         self.initialize_data()
-        self.initialize_model()
+        self.initialize_model(model_name, auto_select_model, interactive_mode)
         total_start_time = time.time()
         round_accuracies = []
 
-        # Load FLAM schedule - auto-detect latest if not provided
-        flam_schedule = []
-        if flam_path is None:
-            try:
-                flam_path = self.get_latest_flam_file()
-                print(f"[INFO] Auto-detected latest FLAM file: {os.path.basename(flam_path)}")
-            except FileNotFoundError as e:
-                print(f"[ERROR] {e}")
-                print("[INFO] Running without FLAM schedule...")
-                return
-        
-        if flam_path:
-            flam_schedule = self.load_flam_schedule(flam_path)
-            print(f"Loaded FLAM schedule with {len(flam_schedule)} timesteps.")
+        # Initialize parameter server and clients
+        server = self.ParameterServer(self.global_model)
+        clients = [self.Client(i, type(self.global_model)(), self.client_data[i]) for i in range(self.num_clients)]
 
-        # Start the timestep counter in a background thread
-        stop_event = threading.Event()
-        def timestep_counter():
-            while not stop_event.is_set():
-                time.sleep(12) # Increment every 12 seconds
-                self.timestep += 1
-                print(f"Timestep: {self.timestep}")
+        flam_schedule = list(self.parse_flam_file(flam_path))
+        print(f"Loaded FLAM schedule with {len(flam_schedule)} timesteps.")
 
-        counter_thread = threading.Thread(target=timestep_counter)
-        counter_thread.daemon = True
-        counter_thread.start()
+        for flam_entry in flam_schedule:
+            print(f"\n--- Timestep {flam_entry['timestep']} | Round {flam_entry['round']} ---")
+            ps_client = flam_entry['target_node']
+            phase = flam_entry['phase']
+            in_range_clients = flam_entry['connected_sats']
+            out_of_range_clients = flam_entry['missing_sats']
 
-        try:
-            flam_idx = 0
-            round_num = 0
-            while flam_idx < len(flam_schedule) and round_num < self.num_rounds:
-                flam_entry = flam_schedule[flam_idx]
-                # Wait until the global timestep matches the FLAM timestep exactly
-                while self.timestep < flam_entry["timestep"]:
-                    time.sleep(0.5)
-                if self.timestep == flam_entry["timestep"]:
-                    phase = flam_entry["phase"]
-                    print(f"\nFLAM Timestep {flam_entry['timestep']} Phase: {phase}")
+            print(f"Parameter Server for this timestep: Client {ps_client+1}")
+            print(f"Phase: {phase}")
+            print(f"In-range clients: {[f'Client {i+1}' for i in in_range_clients]}")
+            print(f"Out-of-range clients: {[f'Client {i+1}' for i in out_of_range_clients]}")
+            print(f"Parameter Server (Client {ps_client+1}) will aggregate this timestep.")
 
-                    if phase == "TRAINING":
-                        # Only train if we haven't already trained for this round
-                        if not hasattr(self, "_pending_client_models"):
-                            print(f"Training round {round_num + 1}...")
-                            client_models = []
-                            client_accuracies = []
-                            round_correct = 0
-                            round_total = 0
-                            for client_id, data_loader in enumerate(self.client_data):
-                                client_model = type(self.global_model)()
-                                client_model.load_state_dict(self.global_model.state_dict())
-                                print(f"Training client {client_id + 1}...")
-                                state_dict, accuracy = self.train_client(client_model, data_loader)
-                                client_models.append(state_dict)
-                                client_accuracies.append(accuracy)
-                                round_correct += accuracy * len(data_loader.dataset)
-                                round_total += len(data_loader.dataset)
-                            self._pending_client_models = client_models
-                            self._pending_round_correct = round_correct
-                            self._pending_round_total = round_total
-                            self._pending_round_start_time = time.time()
-                        else:
-                            print(f"Already trained for round {round_num + 1}, waiting for TRANSMITTING phase...")
-                    elif phase == "TRANSMITTING":
-                        if hasattr(self, "_pending_client_models"):
-                            self.federated_averaging(self._pending_client_models)
-                            print("Global model updated via federated averaging.")
-                            round_time = time.time() - self._pending_round_start_time
-                            round_accuracy = self._pending_round_correct / self._pending_round_total if self._pending_round_total > 0 else 0
-                            self.round_times[f"round_{round_num + 1}"] = round_time
-                            round_accuracies.append(round_accuracy)
-                            print(f"Round {round_num + 1} completed in {round_time:.2f} seconds with average accuracy {round_accuracy:.2%}.")
-                            round_num += 1
-                            # Clean up
-                            del self._pending_client_models
-                            del self._pending_round_correct
-                            del self._pending_round_total
-                            del self._pending_round_start_time
-                flam_idx += 1
+            # Distribute global model to all clients
+            global_state = server.get_global_model().state_dict()
+            for client in clients:
+                client.update_model(global_state)
 
-            self.total_training_time = time.time() - total_start_time
-            self.round_accuracies = round_accuracies
+            # Only train during TRAINING phase
+            round_accuracies_this = []
+            if phase == "TRANSMITTING":
+                for client_id, client in enumerate(clients):
+                    if client_id in in_range_clients:
+                        state_dict, acc = client.train()
+                        server.receive_update(state_dict)
+                        round_accuracies_this.append(acc)
+                        print(f"Client {client.client_id+1} accuracy: {acc:.2%}")
+                    else:
+                        print(f"Client {client.client_id+1} skipped (out of range)")
 
-            print(f"\nFederated learning process completed in {self.total_training_time:.2f} seconds.")
-            print("\nRound-wise processing times and accuracies:")
-            for idx, round_time in self.round_times.items():
-                print(f"{idx}: {round_time:.2f} seconds, Accuracy: {round_accuracies[int(idx.split('_')[1]) - 1]:.2%}")
-            print(f"Average round time: {self.total_training_time/self.num_rounds:.2f} seconds")
-        finally:
-            stop_event.set()
-            counter_thread.join(timeout=2)
-            print("Counter thread stopped.")
-            print("Total timestep count:", self.timestep)
+                # Server aggregates updates from in-range clients
+                server.aggregate()
+                if round_accuracies_this:
+                    avg_acc = sum(round_accuracies_this) / len(round_accuracies_this)
+                    print(f"Timestep {flam_entry['timestep']} average in-range client accuracy: {avg_acc:.2%}")
+                else:
+                    print(f"Timestep {flam_entry['timestep']}: No clients in range to train.")
+
+                self.round_times[f"timestep_{flam_entry['timestep']}"] = time.time() - total_start_time
+                round_accuracies.append(avg_acc if round_accuracies_this else 0)
+
+        self.total_training_time = time.time() - total_start_time
+        self.round_accuracies = round_accuracies
+
+        print(f"\nFederated learning process completed in {self.total_training_time:.2f} seconds.")
+        print("\nTimestep-wise processing times and accuracies:")
+        for idx, round_time in self.round_times.items():
+            print(f"{idx}: {round_time:.2f} seconds, Accuracy: {round_accuracies[int(idx.split('_')[1]) - 1]:.2%}")
+        print(f"Average timestep time: {self.total_training_time/len(self.round_times):.2f} seconds")
 
 if __name__ == "__main__":
     """Standalone entry point for testing FederatedLearning."""
     # Default customization values
     num_rounds = 5
-    num_clients = 3
+    num_clients = 8
     model_type = "SimpleCNN"
     data_set = "MNIST"
 
@@ -349,8 +576,13 @@ if __name__ == "__main__":
     fl_instance.set_num_rounds(num_rounds)
     fl_instance.set_num_clients(num_clients)
     
-    # Let it auto-detect the latest FLAM file instead of hardcoding
-    fl_instance.run(flam_path=None)
+    # Prompt user for FLAM file path
+    flam_path = input("Enter the path to your FLAM file:\n").strip()
+    if not os.path.isfile(flam_path):
+        print(f"Error: FLAM file not found at '{flam_path}'")
+        sys.exit(1)
+
+    fl_instance.run(flam_path=flam_path)
 
     # Evaluate the model
     output = FLOutput()
