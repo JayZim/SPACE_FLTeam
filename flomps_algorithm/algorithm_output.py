@@ -84,9 +84,10 @@ class AlgorithmOutput(Output):
             selected_satellite = algo_op['selected_satellite']
             round_number = algo_op.get('round_number', 1)
             phase = algo_op.get('phase', 'TRANSMITTING')
-            round_length = algo_op.get('round_length', 1)
-            timestep_in_round = algo_op.get('timestep_in_round', 1)
+            phase_length = algo_op.get('phase_length', 1)
+            timestep_in_phase = algo_op.get('timestep_in_phase', 1)
             aggregator_id = algo_op.get('aggregator_id', 0)
+            redistribution_id = algo_op.get('redistribution_id', None)
 
             # Get enhanced server analysis fields
             server_connections_current = algo_op.get('server_connections_current', 0)
@@ -95,7 +96,7 @@ class AlgorithmOutput(Output):
             connected_satellites = algo_op.get('connected_satellites', [])
             missing_satellites = algo_op.get('missing_satellites', [])
             target_satellites = algo_op.get('target_satellites', [])
-            round_complete = algo_op.get('round_complete', False)
+            phase_complete = algo_op.get('phase_complete', False)
 
             # Append the row with all the information
             algo_op_rows.append({
@@ -105,18 +106,19 @@ class AlgorithmOutput(Output):
                 'selected_satellite': selected_satellite,
                 'aggregator_flag': aggregator_flag,
                 'aggregator_id': aggregator_id,
+                'redistribution_id': redistribution_id,
                 'federatedlearning_adjacencymatrix': fl_am,
                 'round_number': round_number,
                 'phase': phase,
-                'round_length': round_length,
-                'timestep_in_round': timestep_in_round,
+                'phase_length': phase_length,
+                'timestep_in_phase': timestep_in_phase,
                 'server_connections_current': server_connections_current,
                 'server_connections_cumulative': server_connections_cumulative,
                 'target_connections': target_connections,
                 'connected_satellites': connected_satellites,
                 'missing_satellites': missing_satellites,
                 'target_satellites': target_satellites,
-                'round_complete': round_complete
+                'phase_complete': phase_complete
             })
 
         # Convert to DataFrame
@@ -153,7 +155,7 @@ class AlgorithmOutput(Output):
             file.write(self.get_flam().to_string(index=False))
 
     def _write_csv_format(self, algorithm_output):
-        """Write CSV format with comprehensive server analysis for FL core compatibility"""
+        """Write CSV format with three-phase comprehensive server analysis"""
         # Generate timestamp string
         timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -163,10 +165,10 @@ class AlgorithmOutput(Output):
         timesteps = len(algorithm_output)
 
         # Create filename
-        filename = f"flam_{num_devices}n_{timesteps}t_flomps_{timestamp_str}.csv"
+        filename = f"flam_{num_devices}n_{timesteps}t_flomps_3phase_{timestamp_str}.csv"
         filepath = os.path.join(self.csv_output_path, filename)
 
-        print(f"Writing FLOMPS CSV format to {filepath}")
+        print(f"Writing FLOMPS 3-Phase CSV format to {filepath}")
 
         with open(filepath, mode='w', newline='') as f:
             timestep = 1
@@ -174,10 +176,12 @@ class AlgorithmOutput(Output):
                 # Get data for this timestep
                 matrix = data['federatedlearning_adjacencymatrix']
                 round_num = data.get('round_number', 1)
-                target_node = data.get('aggregator_id', 0)
+                target_node = data.get('target_node', 0)
+                aggregator_id = data.get('aggregator_id', 0)
+                redistribution_id = data.get('redistribution_id', None)
                 phase = data.get('phase', 'TRANSMITTING')
-                round_length = data.get('round_length', 1)
-                timestep_in_round = data.get('timestep_in_round', 1)
+                phase_length = data.get('phase_length', 1)
+                timestep_in_phase = data.get('timestep_in_phase', 1)
 
                 # Enhanced server analysis fields
                 server_connections_current = data.get('server_connections_current', 0)
@@ -186,18 +190,21 @@ class AlgorithmOutput(Output):
                 connected_satellites = data.get('connected_satellites', [])
                 missing_satellites = data.get('missing_satellites', [])
                 target_satellites = data.get('target_satellites', [])
-                round_complete = data.get('round_complete', False)
+                phase_complete = data.get('phase_complete', False)
 
-                # Write header line with comprehensive server analysis
+                # Write header line with comprehensive three-phase analysis
                 f.write(f"Time: {time_stamp}, Timestep: {timestep}, Round: {round_num}, "
-                    f"Target Node: {target_node}, Phase: {phase}, "
-                    f"Round Length: {round_length}, Timestep in Round: {timestep_in_round}, "
+                    f"Phase: {phase}, "
+                    f"Aggregation Server: {aggregator_id}, "
+                    f"Redistribution Server: {redistribution_id if redistribution_id is not None else 'TBD'}, "
+                    f"Target Node: {target_node}, "
+                    f"Phase Length: {phase_length}, Timestep in Phase: {timestep_in_phase}, "
                     f"Current Connections: {server_connections_current}, "
                     f"Cumulative Connections: {server_connections_cumulative}/{target_connections}, "
                     f"Connected Sats: {connected_satellites}, "
                     f"Missing Sats: {missing_satellites}, "
                     f"Target Sats: {target_satellites}, "
-                    f"Round Complete: {round_complete}\n")
+                    f"Phase Complete: {phase_complete}\n")
 
                 # Write matrix rows
                 for i in range(len(matrix)):
@@ -206,38 +213,48 @@ class AlgorithmOutput(Output):
 
                 timestep += 1
 
-        print(f"FLOMPS CSV format exported to {filename}")
+        print(f"FLOMPS 3-Phase CSV format exported to {filename}")
 
-        # Calculate and display comprehensive round statistics
+        # Calculate and display comprehensive round statistics with three phases
         rounds = {}
         for data in algorithm_output.values():
             round_num = data.get('round_number', 1)
-            if round_num not in rounds:
-                target_connections = data.get('target_connections', 0)
-                final_connections = data.get('server_connections_cumulative', 0)
-                success_rate = (final_connections / target_connections * 100) if target_connections > 0 else 0
+            phase = data.get('phase', 'TRANSMITTING')
 
+            if round_num not in rounds:
                 rounds[round_num] = {
-                    'length': data.get('round_length', 1),
-                    'server': data.get('aggregator_id', 0),
-                    'server_name': data.get('selected_satellite', 'Unknown'),
-                    'completed': data.get('round_complete', False),
-                    'final_connections': final_connections,
-                    'target_connections': target_connections,
-                    'success_rate': success_rate,
-                    'target_satellites': data.get('target_satellites', [])
+                    'aggregation_server': data.get('aggregator_id', 0),
+                    'redistribution_server': data.get('redistribution_id', None),
+                    'transmitting_length': 0,
+                    'check_length': 0,
+                    'redistribution_length': 0,
+                    'phases_seen': set()
                 }
+
+            rounds[round_num]['phases_seen'].add(phase)
+
+            if phase == 'TRANSMITTING':
+                rounds[round_num]['transmitting_length'] = data.get('phase_length', 0)
+            elif phase == 'CHECK':
+                rounds[round_num]['check_length'] = data.get('phase_length', 0)
+            elif phase == 'REDISTRIBUTION':
+                rounds[round_num]['redistribution_length'] = data.get('phase_length', 0)
+                rounds[round_num]['redistribution_server'] = data.get('redistribution_id', None)
 
         print(f"\nGenerated {timesteps} timesteps across {len(rounds)} rounds:")
         print("=" * 80)
 
         for round_num, info in rounds.items():
-            status = "✓ SUCCESS" if info['completed'] else "✗ TIMEOUT"
-            conn_status = f"{info['final_connections']}/{info['target_connections']}"
+            total_length = info['transmitting_length'] + info['check_length'] + info['redistribution_length']
+            agg_server = info['aggregation_server']
+            redist_server = info['redistribution_server'] if info['redistribution_server'] is not None else 'TBD'
 
-            print(f"Round {round_num}: Server {info['server']} ({info['server_name']})")
-            print(f"  Length: {info['length']} timestamps")
-            print(f"  Connections: {conn_status} ({info['success_rate']:.1f}%)")
-            print(f"  Target Satellites: {info['target_satellites']}")
-            print(f"  Status: {status}")
+            print(f"Round {round_num}:")
+            print(f"  Aggregation Server: {agg_server}")
+            print(f"  Redistribution Server: {redist_server}")
+            print(f"  TRANSMITTING: {info['transmitting_length']} timesteps")
+            print(f"  CHECK: {info['check_length']} timesteps")
+            print(f"  REDISTRIBUTION: {info['redistribution_length']} timesteps")
+            print(f"  Total: {total_length} timesteps")
+            print(f"  Phases: {sorted(list(info['phases_seen']))}")
             print("-" * 40)
