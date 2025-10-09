@@ -1,10 +1,18 @@
 """
 Filename: fl_handler.py
 Description: Reads algorithm data to perform preprocessing before running federated learning round.
-Author: Nicholas Paul Candra
-Date: 2025-05-12
-Version: 2.6
+Author: Nicholas Paul Candra & Stephen Zeng
+Date: 2025-10-10
+Version: 2.7
 Python Version: 3.10+
+
+Changelog:
+- 2025-10-10: Added path manager for universal path handling.
+- 2025-10-10: Added auto-detection of latest FLAM file.
+- 2025-10-10: Added dual-format support for FLAM file parsing.
+- 2025-10-10: Added support for old and new FLAM file formats.
+- 2025-10-10: Added support for custom timesteps.
+- 2025-10-10: Added support for custom duration.
 """
 
 import sys
@@ -87,19 +95,13 @@ class FLHandler(Handler):
             self.federated_learning.initialize_model()
             self._fl_initialized = True
 
-        # Track timestep number
-        timestep_number = 1
-
-        for timestamp, group in self.flam.groupby("time_stamp"):
-            matrix_row = group.iloc[0]
-            matrix_raw = matrix_row["federatedlearning_adjacencymatrix"]
-            phase = str(matrix_row.get("phase", "TRAINING")).strip().upper()
-
-           
-            try:
-                aggregator_id = int(str(matrix_row.get("aggregator_id", 0)).strip())
-            except ValueError:
-                aggregator_id = 0
+        for _, row in self.flam.iterrows():
+            matrix_raw = row["federatedlearning_adjacencymatrix"]
+            phase = str(row.get("phase", "TRAINING")).strip().upper()
+            time_stamp = row.get("time_stamp", "Unknown")
+            timestep = row.get("timestep", 1)
+            round_num = row.get("round", self.current_round)
+            aggregator_id = row.get("aggregator_id", 0)
 
             try:
                 if isinstance(matrix_raw, str):
@@ -107,22 +109,31 @@ class FLHandler(Handler):
                 else:
                     matrix = matrix_raw
 
-                # Modified display format: Time first, then Timestep number
-                print(f"\nTime: {timestamp}, Timestep: {timestep_number}, Round: {self.current_round}, Target Node: {aggregator_id}, Phase: {phase}")
-                for row in matrix:
-                    print(",".join(map(str, row)))
+                # Simplified display format focusing on essential information
+                print(f"\nTime: {time_stamp}, Timestep: {timestep}, Round: {round_num}, Phase: {phase}")
+                print(f"Aggregation Server: {aggregator_id}, Target Node: {aggregator_id}")
+                
+                # Display matrix
+                for matrix_row in matrix:
+                    print(",".join(map(str, matrix_row)))
 
-                # Set topology but don't reinitialize everything
+                # Set topology and run FL round
                 self.federated_learning.set_topology(matrix, aggregator_id)
                 
-                # Run the FL round with the current phase
-                self.federated_learning.run_flam_round({"phase": phase})
+                # Prepare simplified metadata for FL core
+                flam_metadata = {
+                    "phase": phase,
+                    "timestep": timestep,
+                    "round": round_num,
+                    "aggregator_id": aggregator_id
+                }
+                
+                # Run the FL round with simplified metadata
+                self.federated_learning.run_flam_round(flam_metadata)
 
-                if phase == "TRANSMITTING":
-                    self.current_round += 1
-
-                # Increment timestep number
-                timestep_number += 1
+                # Update current round based on FLAM data
+                if round_num != self.current_round:
+                    self.current_round = round_num
 
             except Exception as e:
                 print(f"[WARN] Error in FLAM round: {e}")
@@ -171,10 +182,31 @@ class FLHandler(Handler):
             # Support both old "Timestep:" and new "Time:" formats
             if line.startswith("Timestep:") or line.startswith("Time:"):
                 current_header = line
-                matrix_lines = lines[i+1:i+6]
+                
+                # Determine matrix size dynamically
+                # Look for the next non-empty line after header to determine matrix size
+                matrix_start = i + 1
+                matrix_lines = []
+                j = matrix_start
+                
+                # Count consecutive non-empty lines that look like matrix data
+                while j < len(lines) and lines[j].strip():
+                    line_content = lines[j].strip()
+                    # Check if line contains comma-separated integers (matrix data)
+                    if ',' in line_content and all(c.isdigit() or c in ', ' for c in line_content):
+                        matrix_lines.append(lines[j])
+                        j += 1
+                    else:
+                        break
+                
+                # If no matrix lines found, skip this entry
+                if not matrix_lines:
+                    i += 1
+                    continue
+                
                 entry = self.process_flam_block(current_header, matrix_lines)
                 flam_entries.append(entry)
-                i += 6
+                i = j  # Move to next header
             else:
                 i += 1
 
@@ -185,79 +217,149 @@ class FLHandler(Handler):
 
         header_parts = [h.strip() for h in header.split(',')]
 
-        # Handle both formats: "Time: YYYY-MM-DD HH:MM:SS, Timestep: X" or "Timestep: X"
+        # Initialize default values
         time_stamp = None
         timestep = None
-        
-        if header.startswith("Time:"):
-            # New format: "Time: YYYY-MM-DD HH:MM:SS, Timestep: X, ..."
-            time_stamp = header_parts[0].split(':', 1)[1].strip()
-            timestep = int(header_parts[1].split(':')[1].strip())
-        else:
-            # Old format: "Timestep: X, ..."
-            timestep = int(header_parts[0].split(':')[1].strip())
-            time_stamp = timestep  # Use timestep as time_stamp for backward compatibility
+        round_num = 1
+        aggregator_id = 0
+        redistribution_server = None
+        target_node = 0
+        phase = 'TRAINING'
+        phase_length = 1
+        timestep_in_phase = 1
+        current_connections = 0
+        cumulative_connections = "0/0"
+        connected_sats = []
+        missing_sats = []
+        target_sats = []
+        phase_complete = False
 
-        # Extract other header information based on position
-        # New format: Time, Timestep, Round, Target Node, Phase
-        # Old format: Timestep, Round, Target Node, Phase
-        if header.startswith("Time:"):
-            # New format indices
-            round_idx = 2
-            target_idx = 3
-            phase_idx = 4
-        else:
-            # Old format indices
-            round_idx = 1
-            target_idx = 2
-            phase_idx = 3
+        # Parse header fields dynamically
+        for part in header_parts:
+            if ':' in part:
+                key, value = part.split(':', 1)
+                key = key.strip()
+                value = value.strip()
+                
+                if key == "Time":
+                    time_stamp = value
+                elif key == "Timestep":
+                    try:
+                        timestep = int(value)
+                    except ValueError:
+                        timestep = 1
+                elif key == "Round":
+                    try:
+                        round_num = int(value)
+                    except ValueError:
+                        round_num = 1
+                elif key == "Phase":
+                    phase = value.upper()
+                elif key == "Aggregation Server":
+                    try:
+                        aggregator_id = int(value)
+                    except ValueError:
+                        aggregator_id = 0
+                elif key == "Redistribution Server":
+                    if value != "TBD":
+                        try:
+                            redistribution_server = int(value)
+                        except ValueError:
+                            redistribution_server = None
+                    else:
+                        redistribution_server = None
+                elif key == "Target Node":
+                    try:
+                        target_node = int(value)
+                    except ValueError:
+                        target_node = 0
+                elif key == "Phase Length":
+                    try:
+                        phase_length = int(value)
+                    except ValueError:
+                        phase_length = 1
+                elif key == "Timestep in Phase":
+                    try:
+                        timestep_in_phase = int(value)
+                    except ValueError:
+                        timestep_in_phase = 1
+                elif key == "Current Connections":
+                    try:
+                        current_connections = int(value)
+                    except ValueError:
+                        current_connections = 0
+                elif key == "Cumulative Connections":
+                    cumulative_connections = value
+                elif key == "Connected Sats":
+                    # Parse list format: [1, 3, 4, 6, 7]
+                    if value.startswith('[') and value.endswith(']'):
+                        sat_list_str = value[1:-1]  # Remove brackets
+                        try:
+                            connected_sats = [int(x.strip()) for x in sat_list_str.split(',') if x.strip()]
+                        except ValueError:
+                            connected_sats = []
+                    else:
+                        connected_sats = []
+                elif key == "Missing Sats":
+                    # Parse list format: [5] or []
+                    if value.startswith('[') and value.endswith(']'):
+                        sat_list_str = value[1:-1]  # Remove brackets
+                        try:
+                            missing_sats = [int(x.strip()) for x in sat_list_str.split(',') if x.strip()]
+                        except ValueError:
+                            missing_sats = []
+                    else:
+                        missing_sats = []
+                elif key == "Target Sats":
+                    # Parse list format: [1, 3, 4, 5, 6, 7]
+                    if value.startswith('[') and value.endswith(']'):
+                        sat_list_str = value[1:-1]  # Remove brackets
+                        try:
+                            target_sats = [int(x.strip()) for x in sat_list_str.split(',') if x.strip()]
+                        except ValueError:
+                            target_sats = []
+                    else:
+                        target_sats = []
+                elif key == "Phase Complete":
+                    phase_complete = value.lower() == 'true'
 
-        # Extract round number
-        round_num = 1  # Default
-        if len(header_parts) > round_idx and "Round" in header_parts[round_idx]:
-            try:
-                round_num = int(header_parts[round_idx].split(':')[1].strip())
-            except (ValueError, IndexError):
-                round_num = 1
-
-        # Extract aggregator_id (Target Node)
-        aggregator_id = 0  # Default
-        if len(header_parts) > target_idx and "Target Node" in header_parts[target_idx]:
-            try:
-                aggregator_id = int(header_parts[target_idx].split(':')[1].strip())
-            except (ValueError, IndexError):
-                aggregator_id = 0
-
-        # Extract Phase
-        phase = 'TRAINING'  # Default
-        if len(header_parts) > phase_idx and "Phase" in header_parts[phase_idx]:
-            try:
-                phase = header_parts[phase_idx].split(':')[1].strip().upper()
-            except (ValueError, IndexError):
-                phase = 'TRAINING'
+        # Handle backward compatibility for old format
+        if time_stamp is None and timestep is not None:
+            time_stamp = str(timestep)
 
         # Process matrix data
         matrix_data = []
         for line in matrix_lines:
             if line.strip():
-                cleaned_line = line.replace(",", " ").strip()
-                row = list(map(int, cleaned_line.split()))
+                # Handle comma-separated format
+                row = list(map(int, line.strip().split(',')))
                 matrix_data.append(row)
 
         adjacency_matrix = np.array(matrix_data)
         
         # Determine satellite count from matrix size
-        sat_count = len(adjacency_matrix) if len(adjacency_matrix) > 0 else 4
+        sat_count = len(adjacency_matrix) if len(adjacency_matrix) > 0 else 8
 
         return {
             'time_stamp': time_stamp,
+            'timestep': timestep,
             'satellite_count': sat_count,
-            'satellite_names': [f"sat_{i}" for i in range(sat_count)],  # Generate default names
+            'satellite_names': [f"sat_{i}" for i in range(sat_count)],
             'aggregator_flag': aggregator_id is not None,
-            'aggregator_id': aggregator_id,  
+            'aggregator_id': aggregator_id,
+            'redistribution_server': redistribution_server,
+            'target_node': target_node,
             'federatedlearning_adjacencymatrix': adjacency_matrix,
             'phase': phase,
-            'round': round_num
+            'round': round_num,
+            'phase_length': phase_length,
+            'timestep_in_phase': timestep_in_phase,
+            'current_connections': current_connections,
+            'cumulative_connections': cumulative_connections,
+            'connected_sats': connected_sats,
+            'missing_sats': missing_sats,
+            'target_sats': target_sats,
+            'phase_complete': phase_complete
         }
 
 
