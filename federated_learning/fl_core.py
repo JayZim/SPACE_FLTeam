@@ -14,6 +14,7 @@ Changelog:
 - 2025-05-07: Remade file: Added TensorFlow + PyTorch conversion and saving functionality. Removed all Flower functionality
 - 2025-05-09: Added processing time tracking for rounds and overall training
 - 2025-10-04: Integrated FLAM file parsing and dynamic topology adaptation
+- 2025-09-24: Integrated Enhanced Model Evaluation Module and Model Selection Module
 
 Usage:
 Run this file directly to start a Multithreading instance of Tensorflow FL with the chosen number of clients rounds and model.
@@ -132,7 +133,14 @@ class FederatedLearning:
         self.num_clients = clients
 
     def set_model(self, model):
-        """Set the model architecture for federated learning."""
+        """
+        Set the model architecture for federated learning.
+        
+        NOTE: This method receives a legacy TensorFlow model from model.py for configuration purposes.
+        The actual PyTorch models used in training are created in initialize_model() using 
+        model_evaluation.py's ModelRegistry. This legacy model is mainly used for configuration
+        and backward compatibility.
+        """
         self.global_model = model
 
     def set_topology(self, matrix, aggregator_id):
@@ -148,20 +156,77 @@ class FederatedLearning:
         self.total_training_time = 0
         self.timestep = 0
 
-    def initialize_data(self):
-        """Initialize client data loaders"""
-        transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.5,), (0.5,))
-        ])
-        full_dataset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
+    def initialize_data(self, dataset_name="MNIST"):
+        """Initialize client data loaders with support for multiple datasets"""
+        
+        if dataset_name == "MNIST":
+            transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.5,), (0.5,))
+            ])
+            # Use FL data directory
+            data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'MNIST')
+            full_dataset = torchvision.datasets.MNIST(root=data_root, train=True, download=True, transform=transform)
+            
+        elif dataset_name == "CIFAR10":
+            transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            ])
+            # Use FL data directory
+            data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'CIFAR10')
+            full_dataset = torchvision.datasets.CIFAR10(root=data_root, train=True, download=True, transform=transform)
+            
+        elif dataset_name == "EuroSAT":
+            # EuroSAT specific transforms with optimized data augmentation
+            train_transform = transforms.Compose([
+                transforms.Resize((64, 64)),
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.RandomRotation(degrees=15),
+                transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+                transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.3443, 0.3804, 0.4086], std=[0.1814, 0.1535, 0.1311])
+            ])
+            
+            # Use FL data directory for EuroSAT
+            data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'EuroSAT')
+            try:
+                full_dataset = torchvision.datasets.EuroSAT(root=data_root, download=True, transform=train_transform)
+                print(f"✓ EuroSAT dataset loaded successfully with {len(full_dataset)} samples")
+            except Exception as e:
+                # Fallback to MNIST if EuroSAT is not available
+                print(f"Warning: EuroSAT dataset not available ({e}), falling back to MNIST")
+                mnist_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'MNIST')
+                full_dataset = torchvision.datasets.MNIST(root=mnist_root, train=True, download=True, 
+                                                        transform=transforms.Compose([
+                                                            transforms.ToTensor(),
+                                                            transforms.Normalize((0.5,), (0.5,))
+                                                        ]))
+        else:
+            # Default to MNIST
+            transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.5,), (0.5,))
+            ])
+            # Use FL data directory
+            data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'MNIST')
+            full_dataset = torchvision.datasets.MNIST(root=data_root, train=True, download=True, transform=transform)
         
         # Split dataset among clients
         client_datasets = random_split(full_dataset, [len(full_dataset) // self.num_clients] * self.num_clients)
         self.client_data = [DataLoader(dataset, batch_size=32, shuffle=True) for dataset in client_datasets]
+        
+        print(f"✓ Initialized {dataset_name} dataset with {len(full_dataset)} samples for {self.num_clients} clients")
 
     def initialize_model(self, model_name=None, auto_select=True, interactive_mode=True):
-        """Initialize the global model with optional model selection"""
+        """
+        Initialize the global model with optional model selection.
+        
+        NOTE: This method creates the actual PyTorch models used in FL training.
+        It uses model_evaluation.py's ModelRegistry to create PyTorch models,
+        replacing any legacy TensorFlow models from model.py that were set via set_model().
+        """
         if self.model_evaluation_enabled and auto_select and model_name is None:
             try:
                 # Show available models and let user choose
@@ -274,14 +339,32 @@ class FederatedLearning:
         
         return SimpleModel()
 
-    def train_client(self, model, data_loader):
-        """Train a client model on local data"""
-        criterion = nn.CrossEntropyLoss()
-        optimizer = optim.SGD(model.parameters(), lr=0.01)
+    def train_client(self, model, data_loader, dataset_name="MNIST"):
+        """Train a client model on local data with dataset-specific optimizations"""
+        
+        # Dataset-specific configurations
+        if dataset_name == "EuroSAT":
+            # EuroSAT optimized training
+            criterion = nn.CrossEntropyLoss()
+            optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
+            scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.7)
+            local_epochs = 5  # More epochs for EuroSAT
+        elif dataset_name == "CIFAR10":
+            # CIFAR10 optimized training
+            criterion = nn.CrossEntropyLoss()
+            optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=1e-4)
+            scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.5)
+            local_epochs = 4
+        else:
+            # Default MNIST training
+            criterion = nn.CrossEntropyLoss()
+            optimizer = optim.SGD(model.parameters(), lr=0.01)
+            scheduler = None
+            local_epochs = 3
         
         correct = 0
         total = 0
-        for _ in range(3):  # Local epochs
+        for epoch in range(local_epochs):
             for batch_idx, (data, target) in enumerate(data_loader):
                 optimizer.zero_grad()
                 output = model(data)
@@ -293,6 +376,10 @@ class FederatedLearning:
                 _, predicted = torch.max(output.data, 1)
                 total += target.size(0)
                 correct += (predicted == target).sum().item()
+            
+            # Apply learning rate scheduling
+            if scheduler is not None:
+                scheduler.step()
         
         accuracy = correct / total if total > 0 else 0
         return model.state_dict(), accuracy
@@ -395,7 +482,7 @@ class FederatedLearning:
                 client_model.load_state_dict(self.global_model.state_dict())
                 print(f"Training client {client_id + 1}...")
 
-                state_dict, accuracy = self.train_client(client_model, data_loader)
+                state_dict, accuracy = self.train_client(client_model, data_loader, dataset_name)
                 client_models.append(state_dict)
                 round_correct += accuracy * len(data_loader.dataset)
                 round_total += len(data_loader.dataset)
@@ -491,11 +578,42 @@ class FederatedLearning:
             i += 1
 
 
-    def run(self, flam_path=None, model_name=None, auto_select_model=True, interactive_mode=True):
+    def run(self, flam_path=None, model_name=None, auto_select_model=True, interactive_mode=True, dataset_name="MNIST"):
         """
         Run the federated learning process using FLAM file for topology and participation.
         """
-        self.initialize_data()
+        # Interactive selection if enabled
+        if interactive_mode and (model_name is None or dataset_name == "MNIST"):
+            try:
+                from federated_learning.model_selection import ModelSelection
+                
+                available_models = getattr(self, 'available_models', ["SimpleCNN", "ResNet50", "EfficientNetB0", "VisionTransformer", "CustomCNN"])
+                available_datasets = getattr(self, 'available_datasets', ["MNIST", "CIFAR10", "EuroSAT"])
+                
+                selector = ModelSelection(available_models, available_datasets)
+                
+                if model_name is None or dataset_name == "MNIST":
+                    print("\n" + "="*80)
+                    print("Interactive Model and Dataset Selection")
+                    print("="*80)
+                    
+                    selected_model, selected_dataset = selector.select_model_dataset_combination()
+                    
+                    if selector.validate_combination(selected_model, selected_dataset):
+                        selector.show_combination_info(selected_model, selected_dataset)
+                        model_name = selected_model
+                        dataset_name = selected_dataset
+                    else:
+                        print(f"Warning: {selected_model} + {selected_dataset} combination may not be optimal")
+                        model_name = selected_model
+                        dataset_name = selected_dataset
+                        
+            except ImportError:
+                print("Model selection not available, using defaults")
+            except Exception as e:
+                print(f"Model selection failed: {e}, using defaults")
+        
+        self.initialize_data(dataset_name)
         self.initialize_model(model_name, auto_select_model, interactive_mode)
         total_start_time = time.time()
         round_accuracies = []
@@ -504,8 +622,17 @@ class FederatedLearning:
         server = self.ParameterServer(self.global_model)
         clients = [self.Client(i, type(self.global_model)(), self.client_data[i]) for i in range(self.num_clients)]
 
-        flam_schedule = list(self.parse_flam_file(flam_path))
-        print(f"Loaded FLAM schedule with {len(flam_schedule)} timesteps.")
+        # Handle FLAM file or run without it
+        if flam_path is not None:
+            flam_schedule = list(self.parse_flam_file(flam_path))
+            print(f"Loaded FLAM schedule with {len(flam_schedule)} timesteps.")
+        else:
+            # Run without FLAM file - simple federated learning
+            print("Running without FLAM file - using simple federated learning")
+            flam_schedule = [{"timestep": i+1, "round": i+1, "target_node": 0, "phase": "TRANSMITTING", 
+                            "connected_sats": list(range(self.num_clients)), "missing_sats": [], 
+                            "adjacency": [[1 if i == j else 0 for j in range(self.num_clients)] for i in range(self.num_clients)]} 
+                           for i in range(self.num_rounds)]
 
         for flam_entry in flam_schedule:
             print(f"\n--- Timestep {flam_entry['timestep']} | Round {flam_entry['round']} ---")

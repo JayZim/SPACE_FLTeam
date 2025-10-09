@@ -1,8 +1,8 @@
 """
 Filename: fl_config.py
 Description: Converts Federated Learning JSON options to local data types and configures core Federated Learning module via setters. 
-Author: Kimsakona Sok
-Date: 2024-08-02
+Author: Kimsakona Sok & Stephen zeng
+Date: 2025-09-24
 Version: 1.0
 Python Version: 
 
@@ -10,10 +10,14 @@ Changelog:
 - 2024-08-02: Initial creation.
 - 2024-09-16: Supported standalone execution, refactored Model Setters
 - 2025-05-15: Added JSON file reading, and printing the options out to see the connection
-- 2025-01-07: Added Enhanced Model Evaluation Module integration
+- 2025-09-24: Added Enhanced Model Evaluation Module integration
 Usage: 
 - Import this module and call read_options_from_file() with a JSON config file path.
 - Alternatively, run the file directly to test configuration loading.
+
+# NOTE: model.py is a legacy TensorFlow-based configuration interface
+# It provides model and dataset configuration but uses TensorFlow while FL core uses PyTorch
+# Currently kept for backward compatibility but actual FL training uses PyTorch models from model_evaluation.py
 """
 
 import json
@@ -70,11 +74,21 @@ class Config:
         print ("FL setters called")
 
     def set_federated_learning_model(self) -> None:
+        # NOTE: This uses legacy model.py (TensorFlow) for configuration only
+        # The actual PyTorch models are created in fl_core.py using model_evaluation.py
         self.model.set_model_type(self.options["model_type"])
         self.model.set_data_set(self.options["data_set"])
         
         # Set model directly (model selection will be handled in initialize_model if enabled)
+        # This is mainly for configuration - actual model creation happens in PyTorch
         self.fl_core.set_model(self.model)
+        
+        # Store available options for interactive selection
+        if hasattr(self.fl_core, 'available_models'):
+            self.fl_core.available_models = self.options.get("available_models", ["SimpleCNN", "ResNet50","EfficientNetB0", "VisionTransformer", "CustomCNN"])
+        if hasattr(self.fl_core, 'available_datasets'):
+            self.fl_core.available_datasets = self.options.get("available_datasets", ["MNIST", "CIFAR10", "EuroSAT"])
+        
         print ("MODEL setters called")
 
 if __name__ == "__main__":

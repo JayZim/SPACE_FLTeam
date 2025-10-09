@@ -25,6 +25,8 @@
         "num_clients": 4,
         "model_type": "SimpleCNN",
         "data_set": "MNIST",
+        "available_models": ["SimpleCNN", "ResNet50", "EfficientNetB0", "VisionTransformer"],
+        "available_datasets": ["MNIST", "CIFAR10", "EuroSAT"],
         "tick": {
             "tick_configuration": {
                 "tick_behavior": "Adaptive",
@@ -60,11 +62,31 @@
             "selection": {
                 "selection_criteria": "overall",
                 "enable_constraints": true,
-                "max_memory_mb": 100,
-                "max_complexity": "Medium",
-                "preferred_categories": ["CNN", "ResNet"],
+                "max_memory_mb": 200,
+                "max_complexity": "High",
+                "preferred_categories": ["CNN", "ResNet", "EfficientNet", "Transformer"],
                 "min_accuracy_threshold": 0.8,
-                "max_training_time": 60
+                "max_training_time": 120,
+                "dataset_specific_optimization": {
+                    "EuroSAT": {
+                        "preferred_models": ["EfficientNetB0", "VisionTransformer"],
+                        "data_augmentation": true,
+                        "learning_rate": 0.001,
+                        "weight_decay": 1e-4
+                    },
+                    "CIFAR10": {
+                        "preferred_models": ["ResNet50", "EfficientNetB0"],
+                        "data_augmentation": true,
+                        "learning_rate": 0.01,
+                        "weight_decay": 1e-4
+                    },
+                    "MNIST": {
+                        "preferred_models": ["SimpleCNN", "CustomCNN"],
+                        "data_augmentation": false,
+                        "learning_rate": 0.01,
+                        "weight_decay": 0
+                    }
+                }
             },
             "save_evaluation_reports": true,
             "report_directory": "model_evaluation_reports",

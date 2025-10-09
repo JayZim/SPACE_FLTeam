@@ -1,16 +1,16 @@
 """
-Filename: model_evaluation.py
-Description: Enhanced Model Evaluation Module for Federated Learning
+Model Evaluation Module for Federated Learning
 Author: Stephen zeng
-Date: 2025-09-05
-Version: 1.0
+Date: 2025-09-24
+Version: 2.0
 
 Changelog:
 - 2025-09-05: Initial creation of Enhanced Model Evaluation Module
+- 2025-09-24: Refactored to focus on model evaluation, separated model selection
 
 Usage:
 This module provides comprehensive model evaluation capabilities for federated learning,
-including model registry, performance evaluation, and automatic model selection.
+including model registry, performance evaluation, and model comparison.
 """
 
 import torch
@@ -53,9 +53,19 @@ class ModelInfo:
 class ModelRegistry:
     """Registry for managing available models"""
     
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(ModelRegistry, cls).__new__(cls)
+        return cls._instance
+    
     def __init__(self):
-        self.models: Dict[str, ModelInfo] = {}
-        self._register_default_models()
+        if not self._initialized:
+            self.models: Dict[str, ModelInfo] = {}
+            self._register_default_models()
+            ModelRegistry._initialized = True
     
     def _register_default_models(self):
         """Register default models available in the system"""
@@ -87,6 +97,26 @@ class ModelRegistry:
             description="Custom CNN with configurable filters",
             category="CNN",
             complexity="Medium"
+        )
+        
+        # EfficientNet-B0 (EuroSAT optimized)
+        self.register_model(
+            name="EfficientNetB0",
+            model_class=self._create_efficientnet_b0,
+            parameters={"input_shape": (64, 64, 3), "num_classes": 10},
+            description="EfficientNet-B0 optimized for EuroSAT dataset",
+            category="EfficientNet",
+            complexity="Medium"
+        )
+        
+        # Vision Transformer (ViT) (Modern architecture)
+        self.register_model(
+            name="VisionTransformer",
+            model_class=self._create_vision_transformer,
+            parameters={"input_shape": (64, 64, 3), "num_classes": 10, "patch_size": 16, "embed_dim": 192},
+            description="Vision Transformer for modern image classification",
+            category="Transformer",
+            complexity="High"
         )
     
     def register_model(self, name: str, model_class: type, parameters: Dict[str, Any], 
@@ -187,6 +217,102 @@ class ModelRegistry:
                 return x
         
         return CustomCNN(**kwargs)
+    
+    def _create_efficientnet_b0(self, **kwargs):
+        """Create EfficientNet-B0 model optimized for EuroSAT"""
+        import torchvision.models as models
+        
+        class EfficientNetB0EuroSAT(nn.Module):
+            def __init__(self, input_shape=(64, 64, 3), num_classes=10):
+                super(EfficientNetB0EuroSAT, self).__init__()
+                # Load pre-trained EfficientNet-B0
+                self.efficientnet = models.efficientnet_b0(pretrained=True)
+                
+                # Modify the classifier for our number of classes
+                self.efficientnet.classifier = nn.Sequential(
+                    nn.Dropout(0.2),
+                    nn.Linear(self.efficientnet.classifier[1].in_features, num_classes)
+                )
+                
+                # Data augmentation will be handled by transforms, not in the model
+                # This is more efficient and follows PyTorch best practices
+                
+            def forward(self, x):
+                return self.efficientnet(x)
+        
+        return EfficientNetB0EuroSAT(**kwargs)
+    
+    def _create_vision_transformer(self, **kwargs):
+        """Create Vision Transformer model"""
+        class VisionTransformer(nn.Module):
+            def __init__(self, input_shape=(64, 64, 3), num_classes=10, patch_size=16, embed_dim=192, 
+                         num_heads=3, num_layers=6, mlp_ratio=4.0):
+                super(VisionTransformer, self).__init__()
+                
+                self.patch_size = patch_size
+                self.embed_dim = embed_dim
+                self.num_patches = (input_shape[0] // patch_size) * (input_shape[1] // patch_size)
+                
+                # Patch embedding
+                self.patch_embed = nn.Conv2d(input_shape[2], embed_dim, 
+                                           kernel_size=patch_size, stride=patch_size)
+                
+                # Position embedding
+                self.pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, embed_dim))
+                
+                # Class token
+                self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
+                
+                # Transformer encoder
+                encoder_layer = nn.TransformerEncoderLayer(
+                    d_model=embed_dim,
+                    nhead=num_heads,
+                    dim_feedforward=int(embed_dim * mlp_ratio),
+                    dropout=0.1,
+                    batch_first=True
+                )
+                self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+                
+                # Classification head
+                self.norm = nn.LayerNorm(embed_dim)
+                self.head = nn.Linear(embed_dim, num_classes)
+                
+                # Initialize weights
+                self.apply(self._init_weights)
+                
+            def _init_weights(self, m):
+                if isinstance(m, nn.Linear):
+                    torch.nn.init.trunc_normal_(m.weight, std=0.02)
+                    if m.bias is not None:
+                        nn.init.constant_(m.bias, 0)
+                elif isinstance(m, nn.LayerNorm):
+                    nn.init.constant_(m.bias, 0)
+                    nn.init.constant_(m.weight, 1.0)
+            
+            def forward(self, x):
+                B = x.shape[0]
+                
+                # Patch embedding
+                x = self.patch_embed(x)  # (B, embed_dim, H/patch_size, W/patch_size)
+                x = x.flatten(2).transpose(1, 2)  # (B, num_patches, embed_dim)
+                
+                # Add class token
+                cls_tokens = self.cls_token.expand(B, -1, -1)
+                x = torch.cat((cls_tokens, x), dim=1)
+                
+                # Add position embedding
+                x = x + self.pos_embed
+                
+                # Transformer encoder
+                x = self.transformer(x)
+                
+                # Classification
+                x = self.norm(x[:, 0])  # Use class token
+                x = self.head(x)
+                
+                return x
+        
+        return VisionTransformer(**kwargs)
 
 class ModelEvaluator:
     """Evaluator for model performance assessment"""
@@ -446,8 +572,9 @@ class EnhancedModelEvaluationModule:
         """Select the best model for federated learning"""
         if fl_constraints is None:
             fl_constraints = {
-                "max_memory_mb": 100,  # Reasonable memory limit for FL
-                "complexity": "Medium"  # Balance between performance and efficiency
+                "max_memory_mb": 200,  # Increased memory limit for new models
+                "complexity": "Medium",  # Balance between performance and efficiency
+                "preferred_categories": ["CNN", "EfficientNet", "ResNet", "Transformer"]
             }
         
         return self.selector.select_best_model(
