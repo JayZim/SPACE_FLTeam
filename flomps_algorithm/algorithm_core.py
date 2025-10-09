@@ -1,11 +1,11 @@
 """
 Filename: algorithm_core.py
-Description: Manage FLOMPS algorithm processes.
+Description: Manage FLOMPS algorithm processes with three-phase round execution.
 Initial Creator: Elysia Guglielmo (System Architect)
 Contributors: Yuganya Perumal, Gagandeep Singh
 Date: 2024-07-31
-Version: 1.0
-Python Version:
+Version: 2.0
+Python Version: 3.12
 
 Changelog:
 - 2024-07-31: Initial creation.
@@ -20,12 +20,44 @@ Changelog:
 - 2025-09-05: Enhanced load balancing with increased penalty factor (0.1 to 0.5) for better satellite rotation.
 - 2025-09-12: Code cleanup - removed redundant find_best_server_for_round() and unused calculate_cumulative_connection_time() functions.
 - 2025-09-12: Optimized function hierarchy for better maintainability and eliminated dead code.
+- 2025-10-03: Implemented three-phase round structure (TRANSMITTING → CHECK → REDISTRIBUTION)
+- 2025-10-03: Added find_best_redistribution_server() with two-hop optimization (A+B)
+- 2025-10-03: Fixed phase_length to update retroactively after phase completion
 
+Three-Phase Algorithm:
+1. TRANSMITTING: Clients send local models to aggregation server (uplink)
+2. CHECK: Select and transfer global model to redistribution server (relay)
+3. REDISTRIBUTION: Redistribution server sends global model to all clients (downlink)
 
 Usage:
-Instantiate to setup Algorithmhandler and AlgorithmConfig.
+cd /path/to/flomps_algorithm && python algorithm_handler.py ../sat_sim/output/sat_sim_xxxx.txt
 
-quick run: cd (path)/flomps_algorithm && python algorithm_handler.py (path)/sat_sim/output/sat_sim_xxxx.txt
+Sample Output:
+================================================================================
+ROUND 2 - THREE PHASE EXECUTION
+================================================================================
+### PHASE 1: TRANSMITTING (Model Aggregation) ###
+  Selected Server 7 (Satellite 8)
+  Will achieve 6/7 connections in 7 timestamps
+  ✓ TRANSMITTING complete at timestep 7
+
+### PHASE 2: CHECK (Select Redistribution Server) ###
+  Selected Redistribution Server 5 (Satellite 6)
+  Time A (aggregation→redistribution): 1 timestamps
+  Time B (redistribution→clients): 1 timestamps
+  → CHECK phase duration: 1 timesteps
+
+### PHASE 3: REDISTRIBUTION (Distribute Global Model) ###
+  Redistribution Server 5 targeting 5 satellites: [0, 2, 3, 4, 7]
+  ✓ REDISTRIBUTION complete at timestep 1
+
+Round 2 Summary:
+  TRANSMITTING: 7 timesteps (Server 7)
+  CHECK: 1 timesteps (Server 7 → 5)
+  REDISTRIBUTION: 1 timesteps (Server 5)
+  Total: 9 timesteps
+
+CSV Output: synth_FLAMs/flam_8n_120t_flomps_3phase_YYYY-MM-DD_HH-MM-SS.csv
 """
 
 
@@ -46,6 +78,8 @@ class Algorithm():
         # Round tracking variables
         self.round_number = 1
         self.current_server = None
+        self.aggregation_server = None
+        self.redistribution_server = None
 
     def set_satellite_names(self, satellite_names):
         self.satellite_names = satellite_names
@@ -197,96 +231,357 @@ class Algorithm():
 
         return best_server, best_analysis['timestamps_to_max'], best_analysis
 
+    def find_best_redistribution_server(self, aggregation_server, start_matrix_index, max_lookahead=20):
+        """
+        Find the best server for redistribution using two-hop optimization.
+        Calculates: (aggregation_server -> candidate) + (candidate -> all clients)
+        Returns: (redistribution_server, time_to_reach_redistribution_server, redistribution_analysis)
+        """
+        num_satellites = len(self.satellite_names)
+
+        print(f"\n=== Finding Redistribution Server (from Aggregation Server {aggregation_server}) ===")
+
+        # Step 1: Analyze path from aggregation_server to each candidate
+        path_to_candidates = {}
+        for candidate_idx in range(num_satellites):
+            if candidate_idx == aggregation_server:
+                # Same server, no time needed
+                path_to_candidates[candidate_idx] = {
+                    'reachable': True,
+                    'timesteps': 0
+                }
+                continue
+
+            # Analyze how long it takes aggregation_server to reach this candidate
+            connected_to_candidate = False
+            timesteps_to_candidate = max_lookahead
+
+            for timesteps_ahead in range(max_lookahead):
+                matrix_idx = start_matrix_index + timesteps_ahead
+                if matrix_idx >= len(self.adjacency_matrices):
+                    break
+
+                _, matrix = self.adjacency_matrices[matrix_idx]
+
+                # Check if aggregation_server can reach candidate
+                if matrix[aggregation_server][candidate_idx] == 1:
+                    connected_to_candidate = True
+                    timesteps_to_candidate = timesteps_ahead + 1  # +1 because we need to wait for this timestep
+                    break
+
+            path_to_candidates[candidate_idx] = {
+                'reachable': connected_to_candidate,
+                'timesteps': timesteps_to_candidate
+            }
+
+        # Step 2: For each reachable candidate, analyze its redistribution capability
+        redistribution_analysis = {}
+
+        for candidate_idx in range(num_satellites):
+            if not path_to_candidates[candidate_idx]['reachable']:
+                continue
+
+            time_a = path_to_candidates[candidate_idx]['timesteps']
+
+            # Analyze from the timestep when candidate receives the model
+            candidate_start_index = start_matrix_index + time_a
+
+            # Analyze candidate's ability to redistribute to all clients
+            candidate_analysis = self.analyze_single_satellite(candidate_idx, candidate_start_index, max_lookahead)
+
+            time_b = candidate_analysis['timestamps_to_max']
+            total_time = time_a + time_b
+
+            redistribution_analysis[candidate_idx] = {
+                'time_a': time_a,  # aggregation -> candidate
+                'time_b': time_b,  # candidate -> all clients
+                'total_time': total_time,
+                'max_connections': candidate_analysis['max_connections'],
+                'connected_satellites': candidate_analysis['connected_satellites']
+            }
+
+            print(f"Candidate {candidate_idx} ({self.satellite_names[candidate_idx]}): "
+                  f"A={time_a} + B={time_b} = {total_time} timesteps, "
+                  f"reaches {candidate_analysis['max_connections']}/{num_satellites-1} clients")
+
+        # Step 3: Select best redistribution server
+        # Primary: minimum total_time
+        # Secondary: max_connections (in case of tie)
+        # Tertiary: random selection (for ties)
+
+        if not redistribution_analysis:
+            # Fallback to aggregation_server if no candidates found
+            print(f"⚠ No reachable candidates, using aggregation_server {aggregation_server}")
+            return aggregation_server, 0, {'max_connections': 0, 'connected_satellites': set()}
+
+        candidates_by_time = {}
+        for candidate_idx, analysis in redistribution_analysis.items():
+            total_time = analysis['total_time']
+            if total_time not in candidates_by_time:
+                candidates_by_time[total_time] = []
+            candidates_by_time[total_time].append((candidate_idx, analysis))
+
+        # Get minimum time
+        min_time = min(candidates_by_time.keys())
+        best_candidates = candidates_by_time[min_time]
+
+        # If multiple candidates with same time, pick by max_connections
+        max_connections = max(analysis['max_connections'] for _, analysis in best_candidates)
+        best_candidates = [(idx, analysis) for idx, analysis in best_candidates
+                          if analysis['max_connections'] == max_connections]
+
+        # Random selection from remaining candidates
+        best_server_idx, best_analysis = random.choice(best_candidates)
+
+        print(f"\n✓ Selected Redistribution Server {best_server_idx} ({self.satellite_names[best_server_idx]})")
+        print(f"  Time A (aggregation→redistribution): {best_analysis['time_a']} timestamps")
+        print(f"  Time B (redistribution→clients): {best_analysis['time_b']} timestamps")
+        print(f"  Total time: {best_analysis['total_time']} timestamps")
+        print(f"  Will reach {best_analysis['max_connections']}/{num_satellites-1} clients")
+
+        return best_server_idx, best_analysis['time_a'], best_analysis
+
     def start_algorithm_steps(self):
         """
-        Proper FLOMPS algorithm with comprehensive server analysis.
+        Three-phase FLOMPS algorithm: TRANSMITTING → CHECK → REDISTRIBUTION
         """
         adjacency_matrices = self.get_adjacency_matrices()
         algorithm_output = {}
-
         current_matrix_index = 0
+        num_satellites = len(self.satellite_names)
 
         while current_matrix_index < len(adjacency_matrices):
-            # Step 1: Analyze and select best server for this round
-            selected_server, estimated_timestamps, server_analysis = self.find_best_server_for_round(current_matrix_index)
-            self.current_server = selected_server
+            print(f"\n{'='*80}")
+            print(f"ROUND {self.round_number} - THREE PHASE EXECUTION")
+            print(f"{'='*80}")
 
-            # Step 2: Run the round with the selected server
-            round_start_index = current_matrix_index
-            timestep_in_round = 0
-            num_satellites = len(self.satellite_names)
-            target_satellites = server_analysis['connected_satellites']
+            # ============================================================
+            # PHASE 1: TRANSMITTING (Aggregation)
+            # ============================================================
+            print(f"\n### PHASE 1: TRANSMITTING (Model Aggregation) ###")
+
+            # Select aggregation server
+            aggregation_server, _, aggregation_analysis = self.find_best_server_for_round(current_matrix_index)
+            self.aggregation_server = aggregation_server
+
+            # Run TRANSMITTING phase
+            phase_start_index = current_matrix_index
+            timestep_in_phase = 0
+            target_satellites = aggregation_analysis['connected_satellites']
             target_connections_count = len(target_satellites)
             connected_satellites = set()
-            round_complete = False
+            phase_complete = False
 
-            print(f"\n=== Running Round {self.round_number} ===")
-            print(f"Server {selected_server} targeting {target_connections_count} satellites: {sorted(list(target_satellites))}")
+            print(f"Aggregation Server {aggregation_server} targeting {target_connections_count} satellites: {sorted(list(target_satellites))}")
 
-            while current_matrix_index < len(adjacency_matrices) and not round_complete:
-                timestep_in_round += 1
+            while current_matrix_index < len(adjacency_matrices) and not phase_complete:
+                timestep_in_phase += 1
                 time_stamp, matrix = adjacency_matrices[current_matrix_index]
 
-                # Check which satellites this server connects to in this timestamp
+                # Check connections
                 current_timestamp_connections = set()
                 for target_sat in range(num_satellites):
-                    if target_sat != selected_server and matrix[selected_server][target_sat] == 1:
+                    if target_sat != aggregation_server and matrix[aggregation_server][target_sat] == 1:
                         current_timestamp_connections.add(target_sat)
-                        connected_satellites.add(target_sat)  # Add to cumulative
+                        connected_satellites.add(target_sat)
 
-                # Check if server has achieved its maximum connectivity
+                # Check completion
                 if connected_satellites >= target_satellites:
-                    round_complete = True
-                    print(f"  ✓ Server {selected_server} achieved maximum connectivity at timestep {timestep_in_round}")
-                    print(f"    Connected to all target satellites: {sorted(list(connected_satellites))}")
+                    phase_complete = True
+                    print(f"  ✓ TRANSMITTING complete at timestep {timestep_in_phase}")
+                    print(f"    Aggregated models from: {sorted(list(connected_satellites))}")
                 else:
                     missing_satellites = target_satellites - connected_satellites
-                    print(f"  → Timestep {timestep_in_round}: Connected {len(connected_satellites)}/{target_connections_count}")
-                    print(f"    Current: {sorted(list(current_timestamp_connections))}")
-                    print(f"    Cumulative: {sorted(list(connected_satellites))}")
-                    print(f"    Still need: {sorted(list(missing_satellites))}")
+                    print(f"  → Timestep {timestep_in_phase}: {len(connected_satellites)}/{target_connections_count} models aggregated")
 
-                # Store algorithm output
+                # Store output
                 algorithm_output[time_stamp] = {
-                    'satellite_count': len(matrix),
+                    'satellite_count': num_satellites,
                     'satellite_names': self.satellite_names,
-                    'selected_satellite': self.satellite_names[selected_server],
-                    'aggregator_id': selected_server,
+                    'selected_satellite': self.satellite_names[aggregation_server],
+                    'aggregator_id': aggregation_server,
+                    'redistribution_id': None,  # Not determined yet
                     'federatedlearning_adjacencymatrix': matrix,
                     'aggregator_flag': True,
                     'round_number': self.round_number,
                     'phase': "TRANSMITTING",
-                    'target_node': selected_server,
-                    'round_length': timestep_in_round,  # Will be updated when round completes
-                    'timestep_in_round': timestep_in_round,
+                    'target_node': aggregation_server,
+                    'phase_length': timestep_in_phase,
+                    'timestep_in_phase': timestep_in_phase,
                     'server_connections_current': len(current_timestamp_connections),
                     'server_connections_cumulative': len(connected_satellites),
                     'target_connections': target_connections_count,
                     'connected_satellites': sorted(list(connected_satellites)),
                     'missing_satellites': sorted(list(target_satellites - connected_satellites)),
                     'target_satellites': sorted(list(target_satellites)),
-                    'round_complete': round_complete
+                    'phase_complete': phase_complete
                 }
 
                 current_matrix_index += 1
 
                 # Safety timeout
-                if timestep_in_round >= 20:
-                    print(f"  ⚠ Round {self.round_number} timeout after {timestep_in_round} timestamps")
-                    print(f"    Achieved {len(connected_satellites)}/{target_connections_count} target connections")
-                    round_complete = True
+                if timestep_in_phase >= 20:
+                    print(f"  ⚠ TRANSMITTING timeout after {timestep_in_phase} timestamps")
+                    phase_complete = True
 
-            # Update round_length for all timestamps in this completed round
-            actual_round_length = timestep_in_round
-            for i in range(round_start_index, current_matrix_index):
+            transmitting_length = timestep_in_phase
+
+            # Update phase_length for all TRANSMITTING timesteps
+            for i in range(phase_start_index, current_matrix_index):
                 if i < len(adjacency_matrices):
                     timestamp_key = adjacency_matrices[i][0]
                     if timestamp_key in algorithm_output:
-                        algorithm_output[timestamp_key]['round_length'] = actual_round_length
+                        algorithm_output[timestamp_key]['phase_length'] = transmitting_length
 
-            success_rate = len(connected_satellites) / target_connections_count * 100 if target_connections_count > 0 else 0
-            print(f"\nRound {self.round_number} completed in {actual_round_length} timestamps")
-            print(f"Success rate: {success_rate:.1f}% ({len(connected_satellites)}/{target_connections_count} targets reached)")
+            # ============================================================
+            # PHASE 2: CHECK (Select Redistribution Server)
+            # ============================================================
+            print(f"\n### PHASE 2: CHECK (Select Redistribution Server) ###")
+
+            if current_matrix_index >= len(adjacency_matrices):
+                print("⚠ No more timesteps available for CHECK phase")
+                break
+
+            # Find best redistribution server
+            redistribution_server, check_duration, redistribution_analysis = \
+                self.find_best_redistribution_server(aggregation_server, current_matrix_index)
+            self.redistribution_server = redistribution_server
+
+            # Run CHECK phase (waiting for connection to redistribution server)
+            check_start_index = current_matrix_index
+
+            if check_duration == 0:
+                print(f"  ✓ Redistribution server is same as aggregation server (Server {redistribution_server})")
+                print(f"  ✓ CHECK phase duration: 0 timesteps (no transfer needed)")
+            else:
+                print(f"  → Transferring model from Server {aggregation_server} to Server {redistribution_server}")
+                print(f"  → CHECK phase duration: {check_duration} timesteps")
+
+                for i in range(check_duration):
+                    if current_matrix_index >= len(adjacency_matrices):
+                        break
+
+                    timestep_in_check = i + 1
+                    time_stamp, matrix = adjacency_matrices[current_matrix_index]
+
+                    check_complete = (timestep_in_check == check_duration)
+
+                    print(f"  → CHECK timestep {timestep_in_check}/{check_duration}: Waiting for connection to Server {redistribution_server}")
+
+                    # Store output
+                    algorithm_output[time_stamp] = {
+                        'satellite_count': num_satellites,
+                        'satellite_names': self.satellite_names,
+                        'selected_satellite': self.satellite_names[redistribution_server],
+                        'aggregator_id': aggregation_server,
+                        'redistribution_id': redistribution_server,
+                        'federatedlearning_adjacencymatrix': matrix,
+                        'aggregator_flag': False,
+                        'round_number': self.round_number,
+                        'phase': "CHECK",
+                        'target_node': redistribution_server,
+                        'phase_length': check_duration,
+                        'timestep_in_phase': timestep_in_check,
+                        'server_connections_current': 0,
+                        'server_connections_cumulative': 0,
+                        'target_connections': 0,
+                        'connected_satellites': [],
+                        'missing_satellites': [],
+                        'target_satellites': [],
+                        'phase_complete': check_complete
+                    }
+
+                    current_matrix_index += 1
+
+                # Note: CHECK phase_length is already known upfront, so no need to update retroactively
+
+            # ============================================================
+            # PHASE 3: REDISTRIBUTION (Distribute Global Model)
+            # ============================================================
+            print(f"\n### PHASE 3: REDISTRIBUTION (Distribute Global Model) ###")
+
+            if current_matrix_index >= len(adjacency_matrices):
+                print("⚠ No more timesteps available for REDISTRIBUTION phase")
+                break
+
+            # Run REDISTRIBUTION phase
+            redistribution_start_index = current_matrix_index
+            timestep_in_phase = 0
+            target_satellites_redist = redistribution_analysis['connected_satellites']
+            target_connections_count_redist = len(target_satellites_redist)
+            connected_satellites_redist = set()
+            phase_complete = False
+
+            print(f"Redistribution Server {redistribution_server} targeting {target_connections_count_redist} satellites: {sorted(list(target_satellites_redist))}")
+
+            while current_matrix_index < len(adjacency_matrices) and not phase_complete:
+                timestep_in_phase += 1
+                time_stamp, matrix = adjacency_matrices[current_matrix_index]
+
+                # Check connections
+                current_timestamp_connections = set()
+                for target_sat in range(num_satellites):
+                    if target_sat != redistribution_server and matrix[redistribution_server][target_sat] == 1:
+                        current_timestamp_connections.add(target_sat)
+                        connected_satellites_redist.add(target_sat)
+
+                # Check completion
+                if connected_satellites_redist >= target_satellites_redist:
+                    phase_complete = True
+                    print(f"  ✓ REDISTRIBUTION complete at timestep {timestep_in_phase}")
+                    print(f"    Global model distributed to: {sorted(list(connected_satellites_redist))}")
+                else:
+                    missing_satellites = target_satellites_redist - connected_satellites_redist
+                    print(f"  → Timestep {timestep_in_phase}: {len(connected_satellites_redist)}/{target_connections_count_redist} models distributed")
+
+                # Store output
+                algorithm_output[time_stamp] = {
+                    'satellite_count': num_satellites,
+                    'satellite_names': self.satellite_names,
+                    'selected_satellite': self.satellite_names[redistribution_server],
+                    'aggregator_id': aggregation_server,
+                    'redistribution_id': redistribution_server,
+                    'federatedlearning_adjacencymatrix': matrix,
+                    'aggregator_flag': False,
+                    'round_number': self.round_number,
+                    'phase': "REDISTRIBUTION",
+                    'target_node': redistribution_server,
+                    'phase_length': timestep_in_phase,
+                    'timestep_in_phase': timestep_in_phase,
+                    'server_connections_current': len(current_timestamp_connections),
+                    'server_connections_cumulative': len(connected_satellites_redist),
+                    'target_connections': target_connections_count_redist,
+                    'connected_satellites': sorted(list(connected_satellites_redist)),
+                    'missing_satellites': sorted(list(target_satellites_redist - connected_satellites_redist)),
+                    'target_satellites': sorted(list(target_satellites_redist)),
+                    'phase_complete': phase_complete
+                }
+
+                current_matrix_index += 1
+
+                # Safety timeout
+                if timestep_in_phase >= 20:
+                    print(f"  ⚠ REDISTRIBUTION timeout after {timestep_in_phase} timestamps")
+                    phase_complete = True
+
+            redistribution_length = timestep_in_phase
+
+            # Update phase_length for all REDISTRIBUTION timesteps
+            for i in range(redistribution_start_index, current_matrix_index):
+                if i < len(adjacency_matrices):
+                    timestamp_key = adjacency_matrices[i][0]
+                    if timestamp_key in algorithm_output:
+                        algorithm_output[timestamp_key]['phase_length'] = redistribution_length
+
+            # Round summary
+            total_round_length = transmitting_length + check_duration + redistribution_length
+            print(f"\n{'='*80}")
+            print(f"Round {self.round_number} Summary:")
+            print(f"  TRANSMITTING: {transmitting_length} timesteps (Server {aggregation_server})")
+            print(f"  CHECK: {check_duration} timesteps (Server {aggregation_server} → {redistribution_server})")
+            print(f"  REDISTRIBUTION: {redistribution_length} timesteps (Server {redistribution_server})")
+            print(f"  Total: {total_round_length} timesteps")
+            print(f"{'='*80}")
 
             # Move to next round
             self.round_number += 1
