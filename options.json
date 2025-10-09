@@ -16,6 +16,11 @@
         }
     },
     "algorithm": {
+        "server_selection": {
+            "connect_to_all_satellites": false,
+            "max_lookahead": 20,
+            "minimum_connected_satellites": 2
+        },
         "module_settings": {
             "output_to_file": true
         }

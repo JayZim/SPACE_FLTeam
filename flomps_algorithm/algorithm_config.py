@@ -44,3 +44,16 @@ class AlgorithmConfig(Config):
     def set_algorithm(self):
         self.algorithm.set_output_to_file(self.options["module_settings"]["output_to_file"])
 
+        # Set server selection parameters
+        if "server_selection" in self.options:
+            server_selection = self.options["server_selection"]
+            self.algorithm.set_connect_to_all_satellites(
+                server_selection.get("connect_to_all_satellites", False)
+            )
+            self.algorithm.set_max_lookahead(
+                server_selection.get("max_lookahead", 20)
+            )
+            self.algorithm.set_minimum_connected_satellites(
+                server_selection.get("minimum_connected_satellites", 5)
+            )
+
