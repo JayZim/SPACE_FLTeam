@@ -1,7 +1,8 @@
 """
 Filename: algorithm_output.py
 Description: Prepares and sends data to Federated Learning module
-Initial Creator: Elysia Guglielmo (System Architect), stephen zeng
+Initial Creator: Elysia Guglielmo (System Architect),
+Contributor: Gagandeep Singh
 Date: 2025-06-04
 Version: 1.
 Python Version:
@@ -14,9 +15,16 @@ Changelog:
 - 2024-09-21: Algorithm output re organised to remove redundancy and added timestamp and satellite name to data structure passed to FL.
 - 2024-10-14: Output file name changed to FLAM.txt as per client feedback.
 - 2025-06-04: Removed hardcoded paths, added universal path management.
+- 2025-09-05: Enhanced output generation to support new time-optimized algorithm with improved CSV export format.
+- 2025-09-05: Added support for round-based output structure with predictive timestamp information.
+- 2025-09-05: Improved file naming conventions to include satellite count and timestep information in CSV exports.
 
 Usage:
 Instantiate AlgorithmOutput and assign FLInput.
+"""
+
+"""
+Description: Prepares and sends data to Federated Learning module - CSV format only
 """
 from interfaces.output import Output
 import os
@@ -38,7 +46,6 @@ except ImportError:
 
 class AlgorithmOutput(Output):
 
-    # Constructor
     def __init__(self):
         self.flam_output = None
 
@@ -52,7 +59,7 @@ class AlgorithmOutput(Output):
             self.output_path = os.path.join(script_dir, 'output')
             project_root = os.path.dirname(script_dir)
             self.csv_output_path = os.path.join(project_root, "synth_FLAMs")
-            
+
             # ensure directories exist
             os.makedirs(self.output_path, exist_ok=True)
             os.makedirs(self.csv_output_path, exist_ok=True)
@@ -66,55 +73,75 @@ class AlgorithmOutput(Output):
     def get_flam(self):
         return self.flam_output
 
-    # Pass Federated Learning Adjacency Matrix (FLAM) to Federated Learning Component
-    # Aggregator Flag has three values true, false, None
-        # Aggregator Flag set to true when a client is selected with most number of connectivity with other clients.
-        # Aggregator Flag set to false when a client is not selected due to less number of connectivity with other clients.
-        # Aggregator Flag set to None when No connectivity exists between clients.
     def process_algorithm_output(self, algorithm_output):
         algo_op_rows = []
 
         for timestamp, algo_op in algorithm_output.items():
-            # Convert the aggregator_flag to 'None' if there is no connectivity among satellites
+            # Get all the standard fields
             aggregator_flag = algo_op['aggregator_flag'] if algo_op['aggregator_flag'] is not None else 'None'
-            # Get FLAM
             fl_am = algo_op['federatedlearning_adjacencymatrix']
-            # Get satellite count
             satellite_count = algo_op['satellite_count']
-            # Get chosen satellite name
             selected_satellite = algo_op['selected_satellite']
-            # Append the row with the aggregator flag and matrix
+            round_number = algo_op.get('round_number', 1)
+            phase = algo_op.get('phase', 'TRANSMITTING')
+            phase_length = algo_op.get('phase_length', 1)
+            timestep_in_phase = algo_op.get('timestep_in_phase', 1)
+            aggregator_id = algo_op.get('aggregator_id', 0)
+            redistribution_id = algo_op.get('redistribution_id', None)
+
+            # Get enhanced server analysis fields
+            server_connections_current = algo_op.get('server_connections_current', 0)
+            server_connections_cumulative = algo_op.get('server_connections_cumulative', 0)
+            target_connections = algo_op.get('target_connections', 0)
+            connected_satellites = algo_op.get('connected_satellites', [])
+            missing_satellites = algo_op.get('missing_satellites', [])
+            target_satellites = algo_op.get('target_satellites', [])
+            phase_complete = algo_op.get('phase_complete', False)
+
+            # Append the row with all the information
             algo_op_rows.append({
                 'time_stamp': timestamp,
                 'satellite_count': satellite_count,
-                'satellite_name':selected_satellite,
+                'satellite_names': algo_op.get('satellite_names', []),
+                'selected_satellite': selected_satellite,
                 'aggregator_flag': aggregator_flag,
-                'federatedlearning_adjacencymatrix': fl_am
+                'aggregator_id': aggregator_id,
+                'redistribution_id': redistribution_id,
+                'federatedlearning_adjacencymatrix': fl_am,
+                'round_number': round_number,
+                'phase': phase,
+                'phase_length': phase_length,
+                'timestep_in_phase': timestep_in_phase,
+                'server_connections_current': server_connections_current,
+                'server_connections_cumulative': server_connections_cumulative,
+                'target_connections': target_connections,
+                'connected_satellites': connected_satellites,
+                'missing_satellites': missing_satellites,
+                'target_satellites': target_satellites,
+                'phase_complete': phase_complete
             })
 
-        # Convert the list of algorithm output rows to a DataFrame for easy processing and manipulation
+        # Convert to DataFrame
         self.set_flam(pds.DataFrame(algo_op_rows))
 
-    # Data structure that can be passed to Federated Learning (FL) Component
     def set_result(self, algorithm_output):
         self.process_algorithm_output(algorithm_output)
 
     def log_result(self):
         print(self.flam_output)
 
-    # Write the Federated Learning Adjacency Matrix (FLAM) to the file.
     def write_to_file(self, algorithm_output):
         # Ensure output directory exists
-        os.makedirs(self.output_path, exist_ok=True)
+        os.makedirs(self.csv_output_path, exist_ok=True)
 
-        # Write original format
-        self._write_original_format(algorithm_output)
+        # Write original format - COMMENTED OUT as requested
+        # self._write_original_format(algorithm_output)
 
-        # Write Sam's CSV format
-        self._write_sam_csv_format(algorithm_output)
+        # Write CSV format only
+        self._write_csv_format(algorithm_output)
 
     def _write_original_format(self, algorithm_output):
-        """Write the original FLAM format to txt file"""
+        """Write the original FLAM format to txt file - COMMENTED OUT"""
         # Generate timestamp string
         timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
         # Generate unique output file name with 'sat_sim_output' and date/time
@@ -127,8 +154,8 @@ class AlgorithmOutput(Output):
         with open(output_file, 'w') as file:
             file.write(self.get_flam().to_string(index=False))
 
-    def _write_sam_csv_format(self, algorithm_output):
-        """Write Sam's CSV format for FL core compatibility"""
+    def _write_csv_format(self, algorithm_output):
+        """Write CSV format with three-phase comprehensive server analysis"""
         # Generate timestamp string
         timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -137,11 +164,11 @@ class AlgorithmOutput(Output):
         num_devices = first_entry['satellite_count']
         timesteps = len(algorithm_output)
 
-        # Create filename similar to Sam's format
-        filename = f"flam_{num_devices}n_{timesteps}t_flomps_{timestamp_str}.csv"
+        # Create filename
+        filename = f"flam_{num_devices}n_{timesteps}t_flomps_3phase_{timestamp_str}.csv"
         filepath = os.path.join(self.csv_output_path, filename)
 
-        print(f"Writing Sam's CSV format to {filepath}")
+        print(f"Writing FLOMPS 3-Phase CSV format to {filepath}")
 
         with open(filepath, mode='w', newline='') as f:
             timestep = 1
@@ -150,19 +177,84 @@ class AlgorithmOutput(Output):
                 matrix = data['federatedlearning_adjacencymatrix']
                 round_num = data.get('round_number', 1)
                 target_node = data.get('target_node', 0)
-                phase = data.get('phase', 'TRAINING')
+                aggregator_id = data.get('aggregator_id', 0)
+                redistribution_id = data.get('redistribution_id', None)
+                phase = data.get('phase', 'TRANSMITTING')
+                phase_length = data.get('phase_length', 1)
+                timestep_in_phase = data.get('timestep_in_phase', 1)
 
-                # Write header line with Time first, then Timestep number
+                # Enhanced server analysis fields
+                server_connections_current = data.get('server_connections_current', 0)
+                server_connections_cumulative = data.get('server_connections_cumulative', 0)
+                target_connections = data.get('target_connections', 0)
+                connected_satellites = data.get('connected_satellites', [])
+                missing_satellites = data.get('missing_satellites', [])
+                target_satellites = data.get('target_satellites', [])
+                phase_complete = data.get('phase_complete', False)
+
+                # Write header line with comprehensive three-phase analysis
                 f.write(f"Time: {time_stamp}, Timestep: {timestep}, Round: {round_num}, "
-                       f"Target Node: {target_node}, Phase: {phase}\n")
+                    f"Phase: {phase}, "
+                    f"Aggregation Server: {aggregator_id}, "
+                    f"Redistribution Server: {redistribution_id if redistribution_id is not None else 'TBD'}, "
+                    f"Target Node: {target_node}, "
+                    f"Phase Length: {phase_length}, Timestep in Phase: {timestep_in_phase}, "
+                    f"Current Connections: {server_connections_current}, "
+                    f"Cumulative Connections: {server_connections_cumulative}/{target_connections}, "
+                    f"Connected Sats: {connected_satellites}, "
+                    f"Missing Sats: {missing_satellites}, "
+                    f"Target Sats: {target_satellites}, "
+                    f"Phase Complete: {phase_complete}\n")
 
                 # Write matrix rows
                 for i in range(len(matrix)):
                     line = ",".join(str(matrix[i][j]) for j in range(len(matrix[i])))
                     f.write(line + "\n")
 
-                # Add blank line between timesteps
-                f.write("\n")
                 timestep += 1
 
-        print(f"Sam's CSV format exported to {filename}")
+        print(f"FLOMPS 3-Phase CSV format exported to {filename}")
+
+        # Calculate and display comprehensive round statistics with three phases
+        rounds = {}
+        for data in algorithm_output.values():
+            round_num = data.get('round_number', 1)
+            phase = data.get('phase', 'TRANSMITTING')
+
+            if round_num not in rounds:
+                rounds[round_num] = {
+                    'aggregation_server': data.get('aggregator_id', 0),
+                    'redistribution_server': data.get('redistribution_id', None),
+                    'transmitting_length': 0,
+                    'check_length': 0,
+                    'redistribution_length': 0,
+                    'phases_seen': set()
+                }
+
+            rounds[round_num]['phases_seen'].add(phase)
+
+            if phase == 'TRANSMITTING':
+                rounds[round_num]['transmitting_length'] = data.get('phase_length', 0)
+            elif phase == 'CHECK':
+                rounds[round_num]['check_length'] = data.get('phase_length', 0)
+            elif phase == 'REDISTRIBUTION':
+                rounds[round_num]['redistribution_length'] = data.get('phase_length', 0)
+                rounds[round_num]['redistribution_server'] = data.get('redistribution_id', None)
+
+        print(f"\nGenerated {timesteps} timesteps across {len(rounds)} rounds:")
+        print("=" * 80)
+
+        for round_num, info in rounds.items():
+            total_length = info['transmitting_length'] + info['check_length'] + info['redistribution_length']
+            agg_server = info['aggregation_server']
+            redist_server = info['redistribution_server'] if info['redistribution_server'] is not None else 'TBD'
+
+            print(f"Round {round_num}:")
+            print(f"  Aggregation Server: {agg_server}")
+            print(f"  Redistribution Server: {redist_server}")
+            print(f"  TRANSMITTING: {info['transmitting_length']} timesteps")
+            print(f"  CHECK: {info['check_length']} timesteps")
+            print(f"  REDISTRIBUTION: {info['redistribution_length']} timesteps")
+            print(f"  Total: {total_length} timesteps")
+            print(f"  Phases: {sorted(list(info['phases_seen']))}")
+            print("-" * 40)

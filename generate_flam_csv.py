@@ -118,19 +118,12 @@ def generate_flam_csv(tle_file="TLEs/SatCount4.tle", start_time=None, end_time=N
         print("\n🧮 Setting up Algorithm...")
         algorithm = Algorithm()
 
-        # Set up algorithm with SatSim output
-        algorithm.set_adjacency_matrices(adjacency_matrices)
-
-        # Set Sam's algorithm parameters
-        algorithm.set_algorithm_parameters(
-            toggle_chance=0.1,
-            training_time=3,
-            down_bias=2.0
-        )
-
         # Set satellite names from TLE data
         satellite_names = list(tle_data.keys())
         algorithm.set_satellite_names(satellite_names)
+
+        # Set up algorithm with SatSim output
+        algorithm.set_adjacency_matrices(adjacency_matrices)
 
         print(f"🧮 Running algorithm with {len(satellite_names)} satellites...")
 

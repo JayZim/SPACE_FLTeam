@@ -97,3 +97,12 @@ def create_fl_module() -> FLModule:
     fl_output = FLOutput()
 
     return FLModule(fl_config, fl_handler, fl_output)
+
+def create_fl_module_with_model_evaluation() -> FLModule:
+    """Create FL module with model evaluation enabled"""
+    fl = FederatedLearning(enable_model_evaluation=True)
+    fl_config = FLConfig(fl)
+    fl_handler = FLHandler(fl)
+    fl_output = FLOutput()
+
+    return FLModule(fl_config, fl_handler, fl_output)
