@@ -24,6 +24,8 @@ Changelog:
 - 2025-10-03: Added find_best_redistribution_server() with two-hop optimization (A+B)
 - 2025-10-03: Fixed phase_length to update retroactively after phase completion
 
+
+
 Three-Phase Algorithm:
 1. TRANSMITTING: Clients send local models to aggregation server (uplink)
 2. CHECK: Select and transfer global model to redistribution server (relay)
