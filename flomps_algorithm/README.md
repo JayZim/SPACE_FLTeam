@@ -38,6 +38,8 @@ The FLOMPS algorithm executes federated learning rounds in three distinct phases
    - Tertiary: Load balancing (least frequently selected)
 3. Wait for server to connect to target satellites
 4. Aggregate local models into global model
+5. Complete when all target satellites connected or timesteps exhausted
+6. No artificial timeout - continues until natural completion
 
 **Output:** Global model at aggregation server
 
@@ -60,7 +62,8 @@ The FLOMPS algorithm executes federated learning rounds in three distinct phases
 **Process:**
 1. Redistribution server broadcasts global model
 2. Track cumulative connections to client satellites
-3. Complete when all target satellites receive model
+3. Complete when all target satellites receive model or timesteps exhausted
+4. No artificial timeout - continues until natural completion
 
 **Output:** All clients updated with global model
 
@@ -94,9 +97,10 @@ The algorithm supports three key configuration parameters (set in `/options.json
 - **Default:** false
 
 #### 2. max_lookahead (integer)
-- Maximum timesteps to look ahead when evaluating satellites
+- Maximum timesteps to look ahead when evaluating satellites during server selection
 - Server must achieve required connections within this window
-- If no valid server found, algorithm extends search to 2x lookahead
+- If no valid server found, algorithm searches through ALL remaining timesteps
+- Does NOT apply to actual communication phases (TRANSMITTING/REDISTRIBUTION)
 - **Default:** 20 timesteps
 
 #### 3. minimum_connected_satellites (integer)
@@ -117,9 +121,11 @@ The algorithm supports three key configuration parameters (set in `/options.json
 3. **Tertiary:** Load balancing (prefer less frequently selected)
 
 **Step 3: Fallback (if no valid candidates)**
-1. Extend search to 2x max_lookahead
-2. If still none found, select best available (even if below minimum)
-3. Always returns a server
+1. Search through ALL remaining timesteps (not just 2x max_lookahead)
+2. If still impossible to meet requirements:
+   - Display clear IMPOSSIBLE message
+   - Select satellite with most connections (best available)
+3. Always returns a valid server
 
 ### Multi-Criteria Optimization
 
@@ -307,9 +313,10 @@ See `TEST_README.md` for detailed test documentation.
 - Supports small to large satellite constellations
 
 ### 5. Robust Fallback
-- Extends search when no valid candidates found
-- Always selects a server (even if suboptimal)
-- Graceful degradation in poor connectivity scenarios
+- Searches ALL remaining timesteps when no valid candidates found
+- Selects server with most connections when requirements impossible
+- Clear IMPOSSIBLE messages when strict requirements can't be met
+- Always selects a valid server (graceful degradation)
 
 ## Algorithm Performance
 

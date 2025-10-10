@@ -678,15 +678,6 @@ class Algorithm():
 
                 current_matrix_index += 1
 
-                # Safety timeout - when connect_to_all=true, continue with most connected
-                if timestep_in_phase >= 20:
-                    if self.connect_to_all_satellites:
-                        print(f"  ⚠ TRANSMITTING timeout after {timestep_in_phase} timestamps")
-                        print(f"    Cannot connect to all satellites - proceeding with {len(connected_satellites)}/{target_connections_count} connected")
-                    else:
-                        print(f"  ⚠ TRANSMITTING timeout after {timestep_in_phase} timestamps")
-                    phase_complete = True
-
             transmitting_length = timestep_in_phase
 
             # Update phase_length for all TRANSMITTING timesteps
@@ -820,11 +811,6 @@ class Algorithm():
                 }
 
                 current_matrix_index += 1
-
-                # Safety timeout
-                if timestep_in_phase >= 20:
-                    print(f"  ⚠ REDISTRIBUTION timeout after {timestep_in_phase} timestamps")
-                    phase_complete = True
 
             redistribution_length = timestep_in_phase
 
