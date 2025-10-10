@@ -4,7 +4,7 @@ Description: Manage FLOMPS algorithm processes with three-phase round execution.
 Initial Creator: Elysia Guglielmo (System Architect)
 Contributors: Yuganya Perumal, Gagandeep Singh
 Date: 2024-07-31
-Version: 2.0
+Version: 2.1
 Python Version: 3.12
 
 Changelog:
@@ -23,6 +23,11 @@ Changelog:
 - 2025-10-03: Implemented three-phase round structure (TRANSMITTING → CHECK → REDISTRIBUTION)
 - 2025-10-03: Added find_best_redistribution_server() with two-hop optimization (A+B)
 - 2025-10-03: Fixed phase_length to update retroactively after phase completion
+- 2025-10-10: Added FedAvg mode with static server configuration (fedavg_mode, static_server_id)
+- 2025-10-10: Implemented two-phase FedAvg execution (TRANSMITTING → REDISTRIBUTION, no CHECK phase)
+- 2025-10-10: Added configurable server selection parameters (connect_to_all_satellites, max_lookahead, minimum_connected_satellites)
+- 2025-10-10: Enhanced fallback to search ALL remaining timesteps and select most connected server
+- 2025-10-10: Removed artificial timeouts from TRANSMITTING and REDISTRIBUTION phases
 
 
 
