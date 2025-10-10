@@ -151,7 +151,7 @@ Tests configuration loading from AlgorithmConfig.
     - AlgorithmConfig integration
     - options.json loading
     - Default value handling
-
+ 
 ## Test Data
 
 Tests use synthetic adjacency matrices to simulate various connectivity scenarios:
