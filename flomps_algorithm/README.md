@@ -23,7 +23,34 @@ The FLOMPS algorithm implements a three-phase approach to federated learning in 
 - **`ALGORITHM_CORE_README_UPDATED.md`** - Detailed algorithm documentation
 - **`3phaseImplementation.md`** - Three-phase implementation details
 
-## Three-Phase Algorithm
+## Operating Modes
+
+The algorithm supports two operating modes:
+
+### FLOMPS Mode (Moving Server)
+Dynamic server selection with three-phase execution (default mode)
+
+### FedAvg Mode (Static Server)
+Traditional federated learning with fixed parameter server for comparison purposes
+
+Set in `/options.json`:
+```json
+{
+  "algorithm": {
+    "fedavg_mode": false,
+    "static_server_id": 0
+  }
+}
+```
+
+When `fedavg_mode: true`:
+- Uses `static_server_id` as the fixed parameter server
+- Two-phase execution: TRANSMITTING → REDISTRIBUTION (no CHECK phase)
+- Attempts to connect to all satellites, proceeds with best available
+- Ignores `connect_to_all_satellites`, `max_lookahead`, and `minimum_connected_satellites` settings
+- No timeout limits
+
+## Three-Phase Algorithm (FLOMPS Mode)
 
 The FLOMPS algorithm executes federated learning rounds in three distinct phases:
 
@@ -75,9 +102,11 @@ Each phase tracks:
 
 ## Server Selection Algorithm
 
-### Configurable Parameters
+### Configurable Parameters (FLOMPS Mode Only)
 
-The algorithm supports three key configuration parameters (set in `/options.json`):
+The algorithm supports three key configuration parameters for server selection (set in `/options.json`).
+
+**Note:** These parameters are only used in FLOMPS mode. In FedAvg mode, they are ignored.
 
 ```json
 {
@@ -292,27 +321,31 @@ See `TEST_README.md` for detailed test documentation.
 
 ## Key Features
 
-### 1. Dynamic Server Selection
+### 1. Dual Operating Modes
+- **FLOMPS Mode**: Dynamic moving server selection
+- **FedAvg Mode**: Static server for fair comparison with traditional approaches
+
+### 2. Dynamic Server Selection (FLOMPS Mode)
 - Adapts to changing satellite connectivity
 - Multi-criteria optimization
 - Configurable requirements
 
-### 2. Two-Hop Optimization
+### 3. Two-Hop Optimization (FLOMPS Mode)
 - Redistribution server selection minimizes total time
 - Evaluates aggregation-to-redistribution + redistribution-to-clients
 - Can use same server for both aggregation and redistribution if optimal
 
-### 3. Load Balancing
+### 4. Load Balancing (FLOMPS Mode)
 - Tracks selection frequency per satellite
 - Rotates between equally-qualified servers
 - Prevents server overload
 
-### 4. Flexible Configuration
+### 5. Flexible Configuration
 - Three independent parameters
 - Can enforce strict requirements or use best-effort
 - Supports small to large satellite constellations
 
-### 5. Robust Fallback
+### 6. Robust Fallback (FLOMPS Mode)
 - Searches ALL remaining timesteps when no valid candidates found
 - Selects server with most connections when requirements impossible
 - Clear IMPOSSIBLE messages when strict requirements can't be met
@@ -367,7 +400,16 @@ options.json → AlgorithmConfig.read_options()
 
 ## Common Scenarios
 
-### Scenario 1: Require All Satellites
+### Scenario 0: FedAvg Mode (Static Server)
+```json
+{
+  "fedavg_mode": true,
+  "static_server_id": 2
+}
+```
+Use satellite 2 as fixed parameter server (like traditional ground station).
+
+### Scenario 1: Require All Satellites (FLOMPS Mode)
 ```json
 {
   "connect_to_all_satellites": true,
@@ -376,7 +418,7 @@ options.json → AlgorithmConfig.read_options()
 ```
 Server must connect to all satellites within 30 timesteps.
 
-### Scenario 2: Best Effort (Default)
+### Scenario 2: Best Effort (FLOMPS Default)
 ```json
 {
   "connect_to_all_satellites": false,
@@ -386,7 +428,7 @@ Server must connect to all satellites within 30 timesteps.
 ```
 Server must connect to at least 5 satellites within 20 timesteps.
 
-### Scenario 3: Quick Rounds
+### Scenario 3: Quick Rounds (FLOMPS)
 ```json
 {
   "connect_to_all_satellites": false,
@@ -396,7 +438,7 @@ Server must connect to at least 5 satellites within 20 timesteps.
 ```
 Prioritize speed over coverage.
 
-### Scenario 4: Maximum Coverage
+### Scenario 4: Maximum Coverage (FLOMPS)
 ```json
 {
   "connect_to_all_satellites": false,

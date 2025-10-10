@@ -44,6 +44,10 @@ class AlgorithmConfig(Config):
     def set_algorithm(self):
         self.algorithm.set_output_to_file(self.options["module_settings"]["output_to_file"])
 
+        # Set FedAvg mode parameters
+        self.algorithm.set_fedavg_mode(self.options.get("fedavg_mode", False))
+        self.algorithm.set_static_server_id(self.options.get("static_server_id", 0))
+
         # Set server selection parameters
         if "server_selection" in self.options:
             server_selection = self.options["server_selection"]

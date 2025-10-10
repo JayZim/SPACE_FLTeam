@@ -578,6 +578,110 @@ class TestConfigurationLoading(unittest.TestCase):
         self.assertEqual(self.algorithm.minimum_connected_satellites, 5)
 
 
+class TestFedAvgMode(unittest.TestCase):
+    """Test FedAvg mode (static server) functionality"""
+
+    def setUp(self):
+        """Set up test fixtures"""
+        self.algorithm = Algorithm()
+        satellite_names = ["Sat0", "Sat1", "Sat2", "Sat3"]
+        self.algorithm.set_satellite_names(satellite_names)
+
+    def test_fedavg_mode_parameters(self):
+        """Test FedAvg mode parameter setters"""
+        self.algorithm.set_fedavg_mode(True)
+        self.assertTrue(self.algorithm.fedavg_mode)
+
+        self.algorithm.set_static_server_id(2)
+        self.assertEqual(self.algorithm.static_server_id, 2)
+
+    def test_fedavg_two_phase_execution(self):
+        """Test FedAvg mode executes two phases (TRANSMITTING → REDISTRIBUTION)"""
+        # Create matrices with connectivity
+        matrices = []
+        for t in range(20):
+            # Static server (Sat2) connects to all satellites over time
+            if t < 5:
+                # Gradual connectivity buildup
+                matrix = np.array([
+                    [0, 0, 1, 0],
+                    [0, 0, 1, 0],
+                    [1, 1, 0, 0],  # Sat2 as server
+                    [0, 0, 0, 0]
+                ])
+            elif t < 10:
+                matrix = np.array([
+                    [0, 0, 1, 0],
+                    [0, 0, 1, 0],
+                    [1, 1, 0, 1],  # Sat2 connects to more
+                    [0, 0, 1, 0]
+                ])
+            else:
+                # Full connectivity
+                matrix = np.array([
+                    [0, 0, 1, 0],
+                    [0, 0, 1, 0],
+                    [1, 1, 0, 1],
+                    [0, 0, 1, 0]
+                ])
+            matrices.append((t, matrix))
+
+        self.algorithm.set_adjacency_matrices(matrices)
+
+        # Enable FedAvg mode with Sat2 as static server
+        self.algorithm.set_fedavg_mode(True)
+        self.algorithm.set_static_server_id(2)
+        self.algorithm.set_output_to_file(False)
+
+        # Run algorithm
+        self.algorithm.start_algorithm_steps()
+
+        # Get output
+        output = self.algorithm.get_algorithm_output()
+
+        # Verify output exists
+        self.assertIsNotNone(output)
+        self.assertGreater(len(output), 0)
+
+        # Check that only TRANSMITTING and REDISTRIBUTION phases exist
+        phases_in_round = set()
+        for timestep_key, entry in output.items():
+            if entry['round_number'] == 1:
+                phases_in_round.add(entry['phase'])
+
+        self.assertIn('TRANSMITTING', phases_in_round)
+        self.assertIn('REDISTRIBUTION', phases_in_round)
+        self.assertNotIn('CHECK', phases_in_round)  # No CHECK phase in FedAvg
+
+        # Verify static server is used for both phases
+        for timestep_key, entry in output.items():
+            if entry['round_number'] == 1:
+                self.assertEqual(entry['target_node'], 2)  # Always Sat2
+
+    def test_fedavg_config_loading(self):
+        """Test FedAvg mode configuration loading from AlgorithmConfig"""
+        config = AlgorithmConfig(self.algorithm)
+
+        test_options = {
+            'fedavg_mode': True,
+            'static_server_id': 3,
+            'server_selection': {
+                'connect_to_all_satellites': True,  # Should be ignored in FedAvg
+                'max_lookahead': 10,  # Should be ignored in FedAvg
+                'minimum_connected_satellites': 2  # Should be ignored in FedAvg
+            },
+            'module_settings': {
+                'output_to_file': False
+            }
+        }
+
+        config.read_options(test_options)
+
+        # Verify FedAvg parameters loaded
+        self.assertTrue(self.algorithm.fedavg_mode)
+        self.assertEqual(self.algorithm.static_server_id, 3)
+
+
 def run_test_suite():
     """Run the complete test suite"""
 
@@ -597,6 +701,7 @@ def run_test_suite():
     suite.addTests(loader.loadTestsFromTestCase(TestEdgeCasesAndFallback))
     suite.addTests(loader.loadTestsFromTestCase(TestLoadBalancing))
     suite.addTests(loader.loadTestsFromTestCase(TestConfigurationLoading))
+    suite.addTests(loader.loadTestsFromTestCase(TestFedAvgMode))
 
     # Run tests
     runner = unittest.TextTestRunner(verbosity=2)

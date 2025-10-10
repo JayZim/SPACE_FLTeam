@@ -88,6 +88,10 @@ class Algorithm():
         self.max_lookahead = 20
         self.minimum_connected_satellites = 5
 
+        # FedAvg mode parameters
+        self.fedavg_mode = False
+        self.static_server_id = 0
+
     def set_satellite_names(self, satellite_names):
         self.satellite_names = satellite_names
         self.selection_counts = npy.zeros(len(satellite_names))
@@ -112,6 +116,12 @@ class Algorithm():
 
     def set_minimum_connected_satellites(self, minimum_connected_satellites):
         self.minimum_connected_satellites = minimum_connected_satellites
+
+    def set_fedavg_mode(self, fedavg_mode):
+        self.fedavg_mode = fedavg_mode
+
+    def set_static_server_id(self, static_server_id):
+        self.static_server_id = static_server_id
 
     def get_algorithm_output(self):
         return self.algorithm_output_data
@@ -611,8 +621,164 @@ class Algorithm():
 
         while current_matrix_index < len(adjacency_matrices):
             print(f"\n{'='*80}")
-            print(f"ROUND {self.round_number} - THREE PHASE EXECUTION")
+            if self.fedavg_mode:
+                print(f"ROUND {self.round_number} - FEDAVG MODE (STATIC SERVER)")
+            else:
+                print(f"ROUND {self.round_number} - THREE PHASE EXECUTION")
             print(f"{'='*80}")
+
+            # ============================================================
+            # FedAvg Mode: Static Server (Two-Phase)
+            # ============================================================
+            if self.fedavg_mode:
+                # Use static server for both aggregation and redistribution
+                aggregation_server = self.static_server_id
+                redistribution_server = self.static_server_id
+                self.aggregation_server = aggregation_server
+                self.redistribution_server = redistribution_server
+
+                print(f"\nUsing Static Server {aggregation_server} ({self.satellite_names[aggregation_server]}) for FedAvg")
+
+                # Phase 1: TRANSMITTING (Aggregation to static server)
+                print(f"\n### PHASE 1: TRANSMITTING (Model Aggregation) ###")
+                print(f"Static Aggregation Server {aggregation_server}")
+
+                phase_start_index = current_matrix_index
+                timestep_in_phase = 0
+                target_satellites = set(range(num_satellites)) - {aggregation_server}
+                connected_satellites = set()
+                phase_complete = False
+
+                print(f"Aggregation Server {aggregation_server} targeting {len(target_satellites)} satellites: {sorted(list(target_satellites))}")
+
+                while current_matrix_index < len(adjacency_matrices) and not phase_complete:
+                    timestep_in_phase += 1
+                    time_stamp, matrix = adjacency_matrices[current_matrix_index]
+
+                    # Check connections
+                    current_timestamp_connections = set()
+                    for target_sat in range(num_satellites):
+                        if target_sat != aggregation_server and matrix[aggregation_server][target_sat] == 1:
+                            current_timestamp_connections.add(target_sat)
+                            connected_satellites.add(target_sat)
+
+                    # Check completion (try to connect to all, but proceed with best available)
+                    if connected_satellites >= target_satellites:
+                        phase_complete = True
+                        print(f"  ✓ TRANSMITTING complete at timestep {timestep_in_phase}")
+                        print(f"    Aggregated models from: {sorted(list(connected_satellites))}")
+                    else:
+                        print(f"  → Timestep {timestep_in_phase}: {len(connected_satellites)}/{len(target_satellites)} models aggregated")
+
+                    # Store output
+                    algorithm_output[time_stamp] = {
+                        'satellite_count': num_satellites,
+                        'satellite_names': self.satellite_names,
+                        'selected_satellite': self.satellite_names[aggregation_server],
+                        'aggregator_id': aggregation_server,
+                        'redistribution_id': redistribution_server,
+                        'federatedlearning_adjacencymatrix': matrix,
+                        'aggregator_flag': True,
+                        'round_number': self.round_number,
+                        'phase': "TRANSMITTING",
+                        'target_node': aggregation_server,
+                        'phase_length': timestep_in_phase,
+                        'timestep_in_phase': timestep_in_phase,
+                        'server_connections_current': len(current_timestamp_connections),
+                        'server_connections_cumulative': len(connected_satellites),
+                        'target_connections': len(target_satellites),
+                        'connected_satellites': sorted(list(connected_satellites)),
+                        'missing_satellites': sorted(list(target_satellites - connected_satellites)),
+                        'target_satellites': sorted(list(target_satellites)),
+                        'phase_complete': phase_complete
+                    }
+
+                    current_matrix_index += 1
+
+                transmitting_length = timestep_in_phase
+
+                # Update phase_length for all TRANSMITTING timesteps
+                for i in range(phase_start_index, current_matrix_index):
+                    if i < len(adjacency_matrices):
+                        timestamp_key = adjacency_matrices[i][0]
+                        algorithm_output[timestamp_key]['phase_length'] = transmitting_length
+
+                # Phase 2: REDISTRIBUTION (Distribution from static server)
+                print(f"\n### PHASE 2: REDISTRIBUTION (Distribute Global Model) ###")
+                print(f"Static Redistribution Server {redistribution_server}")
+
+                redistribution_start_index = current_matrix_index
+                timestep_in_phase = 0
+                target_satellites_redist = connected_satellites.copy()  # Only redistribute to those we got models from
+                connected_satellites_redist = set()
+                phase_complete = False
+
+                print(f"Redistribution Server {redistribution_server} targeting {len(target_satellites_redist)} satellites: {sorted(list(target_satellites_redist))}")
+
+                while current_matrix_index < len(adjacency_matrices) and not phase_complete:
+                    timestep_in_phase += 1
+                    time_stamp, matrix = adjacency_matrices[current_matrix_index]
+
+                    # Check connections
+                    current_timestamp_connections = set()
+                    for target_sat in target_satellites_redist:
+                        if matrix[redistribution_server][target_sat] == 1:
+                            current_timestamp_connections.add(target_sat)
+                            connected_satellites_redist.add(target_sat)
+
+                    # Check completion
+                    if connected_satellites_redist >= target_satellites_redist:
+                        phase_complete = True
+                        print(f"  ✓ REDISTRIBUTION complete at timestep {timestep_in_phase}")
+                        print(f"    Global model distributed to: {sorted(list(connected_satellites_redist))}")
+                    else:
+                        print(f"  → Timestep {timestep_in_phase}: {len(connected_satellites_redist)}/{len(target_satellites_redist)} models distributed")
+
+                    # Store output
+                    algorithm_output[time_stamp] = {
+                        'satellite_count': num_satellites,
+                        'satellite_names': self.satellite_names,
+                        'selected_satellite': self.satellite_names[redistribution_server],
+                        'aggregator_id': aggregation_server,
+                        'redistribution_id': redistribution_server,
+                        'federatedlearning_adjacencymatrix': matrix,
+                        'aggregator_flag': False,
+                        'round_number': self.round_number,
+                        'phase': "REDISTRIBUTION",
+                        'target_node': redistribution_server,
+                        'phase_length': timestep_in_phase,
+                        'timestep_in_phase': timestep_in_phase,
+                        'server_connections_current': len(current_timestamp_connections),
+                        'server_connections_cumulative': len(connected_satellites_redist),
+                        'target_connections': len(target_satellites_redist),
+                        'connected_satellites': sorted(list(connected_satellites_redist)),
+                        'missing_satellites': sorted(list(target_satellites_redist - connected_satellites_redist)),
+                        'target_satellites': sorted(list(target_satellites_redist)),
+                        'phase_complete': phase_complete
+                    }
+
+                    current_matrix_index += 1
+
+                redistribution_length = timestep_in_phase
+
+                # Update phase_length for all REDISTRIBUTION timesteps
+                for i in range(redistribution_start_index, current_matrix_index):
+                    if i < len(adjacency_matrices):
+                        timestamp_key = adjacency_matrices[i][0]
+                        algorithm_output[timestamp_key]['phase_length'] = redistribution_length
+
+                # Round summary
+                total_round_length = transmitting_length + redistribution_length
+                print(f"\n{'='*80}")
+                print(f"Round {self.round_number} Summary (FedAvg Mode):")
+                print(f"  Static Server: {aggregation_server} ({self.satellite_names[aggregation_server]})")
+                print(f"  TRANSMITTING: {transmitting_length} timesteps")
+                print(f"  REDISTRIBUTION: {redistribution_length} timesteps")
+                print(f"  Total: {total_round_length} timesteps")
+                print(f"{'='*80}\n")
+
+                self.round_number += 1
+                continue  # Skip to next round
 
             # ============================================================
             # PHASE 1: TRANSMITTING (Aggregation)
