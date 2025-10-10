@@ -232,33 +232,6 @@ Edit `/options.json` to configure server selection:
 }
 ```
 
-### Programmatic Usage
-
-```python
-from flomps_algorithm.algorithm_core import Algorithm
-
-# Create algorithm instance
-algorithm = Algorithm()
-
-# Configure parameters
-algorithm.set_connect_to_all_satellites(False)
-algorithm.set_max_lookahead(20)
-algorithm.set_minimum_connected_satellites(5)
-
-# Set satellite names
-satellite_names = ["Sat1", "Sat2", "Sat3", "Sat4"]
-algorithm.set_satellite_names(satellite_names)
-
-# Set adjacency matrices from SatSim
-algorithm.set_adjacency_matrices(adjacency_matrices)
-
-# Run algorithm
-algorithm.start_algorithm_steps()
-
-# Get output
-output = algorithm.get_algorithm_output()
-```
-
 ## Output Format
 
 The algorithm generates FLAM (Federated Learning Adjacency Matrix) CSV files in `synth_FLAMs/`:
@@ -351,36 +324,7 @@ See `TEST_README.md` for detailed test documentation.
 - Clear IMPOSSIBLE messages when strict requirements can't be met
 - Always selects a valid server (graceful degradation)
 
-## Algorithm Performance
 
-### Time Complexity
-- Satellite analysis: O(n × t) where n = satellites, t = lookahead
-- Server selection: O(n²) for comparison
-- Total per round: O(n² × t)
-
-### Space Complexity
-- Adjacency matrices: O(n² × T) where T = total timesteps
-- Analysis cache: O(n × t)
-- Output data: O(T)
-
-### Scalability
-- Tested with 4-40 satellites
-- Recommended max_lookahead: 10-30 timesteps
-- Large constellations (>40 satellites) may require optimization
-
-## Dependencies
-
-- Python 3.12
-- NumPy 1.26.4
-- Standard library: json, random, sys
-
-## Integration
-
-The algorithm integrates with:
-- **SatSim**: Receives adjacency matrices
-- **Federated Learning**: Outputs FLAM schedules
-- **Module Factory**: Instantiated via factory pattern
-- **CLI**: Accessible through main.py workflows
 
 ## Configuration Architecture
 
@@ -447,48 +391,3 @@ Prioritize speed over coverage.
 }
 ```
 Allow longer wait for more connections.
-
-## Troubleshooting
-
-### No valid servers found
-**Cause:** Requirements too strict for satellite constellation
-**Solution:** Reduce minimum_connected_satellites or increase max_lookahead
-
-### Always falling back
-**Cause:** Connectivity pattern doesn't support requirements within lookahead
-**Solution:** Check TLE file for realistic orbits, adjust parameters
-
-### Same server selected repeatedly
-**Cause:** Only one satellite meets requirements
-**Solution:** Relax connect_to_all or minimum_connected_satellites
-
-### Rounds take too long
-**Cause:** max_lookahead too high, waiting for many connections
-**Solution:** Reduce minimum_connected_satellites or max_lookahead
-
-## Version History
-
-- **v2.0** (2025-10-10): Added configurable server selection parameters
-- **v1.5** (2025-10-03): Implemented three-phase round structure
-- **v1.2** (2025-09-12): Optimized function hierarchy
-- **v1.1** (2025-09-05): Added cumulative connectivity model
-- **v1.0** (2024-09-21): Initial load balancing implementation
-
-## Authors
-
-- Elysia Guglielmo (System Architect)
-- Yuganya Perumal (Algorithm Implementation)
-- Gagandeep Singh (Three-Phase Design)
-- Claude Code (Configuration System & Testing)
-
-## License
-
-Part of SPACE (Satellite Federated Learning Project)
-
-## References
-
-For more details, see:
-- `ALGORITHM_CORE_README_UPDATED.md` - Detailed algorithm documentation
-- `3phaseImplementation.md` - Three-phase design specification
-- `TEST_README.md` - Test suite documentation
-- `PROJECT_ARCHITECTURE_GUIDE.md` - System architecture
