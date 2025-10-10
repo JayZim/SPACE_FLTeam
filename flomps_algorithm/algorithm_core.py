@@ -251,11 +251,14 @@ class Algorithm():
             }
             print(f"  ✓ Satellite {sat_idx}: Valid candidate - {analysis['max_connections']}/{num_satellites-1} connections in {timestep_to_required} timesteps")
 
-        # Step 3: If no valid candidates, look beyond max_lookahead
+        # Step 3: If no valid candidates, search through ALL remaining timesteps
         if not valid_candidates:
-            print(f"\n⚠ No satellites meet criteria within {self.max_lookahead} timesteps, extending search...")
-            extended_lookahead = self.max_lookahead * 2
-            satellite_analysis = self.analyze_all_satellites(start_matrix_index, extended_lookahead)
+            # Calculate total remaining timesteps
+            total_remaining = len(self.adjacency_matrices) - start_matrix_index
+            print(f"\n⚠ No satellites meet criteria within {self.max_lookahead} timesteps")
+            print(f"   Searching through all remaining {total_remaining} timesteps...")
+
+            satellite_analysis = self.analyze_all_satellites(start_matrix_index, total_remaining)
 
             for sat_idx, analysis in satellite_analysis.items():
                 if analysis['max_connections'] >= required_connections:
@@ -272,9 +275,15 @@ class Algorithm():
                         }
                         print(f"  ✓ Satellite {sat_idx}: Found - {analysis['max_connections']}/{num_satellites-1} connections in {timestep_to_required} timesteps")
 
-        # Step 4: If still no valid candidates, fallback to best available
+        # Step 4: If still no valid candidates, declare it impossible
         if not valid_candidates:
-            print(f"\n⚠ No satellites can reach {required_connections} connections, selecting best available")
+            if self.connect_to_all_satellites:
+                print(f"\n⚠ IMPOSSIBLE: No satellite can connect to all {num_satellites-1} satellites within the given {len(self.adjacency_matrices) - start_matrix_index} timesteps")
+            else:
+                print(f"\n⚠ IMPOSSIBLE: No satellite can connect to {required_connections} satellites within the given {len(self.adjacency_matrices) - start_matrix_index} timesteps")
+
+            print(f"   Falling back to best available satellite...")
+
             best_server = 0
             best_analysis = satellite_analysis[0]
             for sat_idx, analysis in satellite_analysis.items():
@@ -444,12 +453,13 @@ class Algorithm():
                   f"A={time_a} + B={time_b} = {total_time} timesteps, "
                   f"reaches {candidate_analysis['max_connections']}/{num_satellites-1} clients")
 
-        # Step 3: If no valid candidates, extend search
+        # Step 3: If no valid candidates, search through ALL remaining timesteps
         if not redistribution_analysis:
-            print(f"\n⚠ No candidates meet criteria within {max_lookahead} timesteps, extending search...")
-            extended_lookahead = max_lookahead * 2
+            total_remaining = len(self.adjacency_matrices) - start_matrix_index
+            print(f"\n⚠ No candidates meet criteria within {max_lookahead} timesteps")
+            print(f"   Searching through all remaining {total_remaining} timesteps...")
 
-            # Re-analyze paths with extended lookahead
+            # Re-analyze paths with all remaining timesteps
             for candidate_idx in range(num_satellites):
                 if candidate_idx == aggregation_server:
                     path_to_candidates[candidate_idx] = {
@@ -459,9 +469,9 @@ class Algorithm():
                     continue
 
                 connected_to_candidate = False
-                timesteps_to_candidate = extended_lookahead
+                timesteps_to_candidate = total_remaining
 
-                for timesteps_ahead in range(extended_lookahead):
+                for timesteps_ahead in range(total_remaining):
                     matrix_idx = start_matrix_index + timesteps_ahead
                     if matrix_idx >= len(self.adjacency_matrices):
                         break
@@ -485,7 +495,7 @@ class Algorithm():
 
                 time_a = path_to_candidates[candidate_idx]['timesteps']
                 candidate_start_index = start_matrix_index + time_a
-                candidate_analysis = self.analyze_single_satellite(candidate_idx, candidate_start_index, extended_lookahead)
+                candidate_analysis = self.analyze_single_satellite(candidate_idx, candidate_start_index, total_remaining)
 
                 if candidate_analysis['max_connections'] >= required_connections:
                     timestep_to_required = None
@@ -507,9 +517,14 @@ class Algorithm():
                         }
                         print(f"  ✓ Candidate {candidate_idx}: Found - A={time_a} + B={time_b} = {total_time} timesteps")
 
-        # Step 4: If still no valid candidates, fallback to best available
+        # Step 4: If still no valid candidates, declare it impossible and fallback
         if not redistribution_analysis:
-            print(f"\n⚠ No candidates can reach {required_connections} connections, using aggregation_server {aggregation_server}")
+            if self.connect_to_all_satellites:
+                print(f"\n⚠ IMPOSSIBLE: No redistribution server can reach all {num_satellites-1} satellites within the given {len(self.adjacency_matrices) - start_matrix_index} timesteps")
+            else:
+                print(f"\n⚠ IMPOSSIBLE: No redistribution server can reach {required_connections} satellites within the given {len(self.adjacency_matrices) - start_matrix_index} timesteps")
+
+            print(f"   Falling back to aggregation server {aggregation_server}...")
             return aggregation_server, 0, {'max_connections': 0, 'connected_satellites': set()}
 
         # Step 5: Select best redistribution server
@@ -651,11 +666,10 @@ class Algorithm():
             self.redistribution_server = redistribution_server
 
             # Run CHECK phase (waiting for connection to redistribution server)
-            check_start_index = current_matrix_index
-
             if check_duration == 0:
                 print(f"  ✓ Redistribution server is same as aggregation server (Server {redistribution_server})")
                 print(f"  ✓ CHECK phase duration: 0 timesteps (no transfer needed)")
+                # Note: No output written for 0-duration CHECK phase, goes directly to REDISTRIBUTION
             else:
                 print(f"  → Transferring model from Server {aggregation_server} to Server {redistribution_server}")
                 print(f"  → CHECK phase duration: {check_duration} timesteps")
