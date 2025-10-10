@@ -517,15 +517,56 @@ class Algorithm():
                         }
                         print(f"  ✓ Candidate {candidate_idx}: Found - A={time_a} + B={time_b} = {total_time} timesteps")
 
-        # Step 4: If still no valid candidates, declare it impossible and fallback
+        # Step 4: If still no valid candidates, select the one with most connections
         if not redistribution_analysis:
             if self.connect_to_all_satellites:
                 print(f"\n⚠ IMPOSSIBLE: No redistribution server can reach all {num_satellites-1} satellites within the given {len(self.adjacency_matrices) - start_matrix_index} timesteps")
             else:
                 print(f"\n⚠ IMPOSSIBLE: No redistribution server can reach {required_connections} satellites within the given {len(self.adjacency_matrices) - start_matrix_index} timesteps")
 
-            print(f"   Falling back to aggregation server {aggregation_server}...")
-            return aggregation_server, 0, {'max_connections': 0, 'connected_satellites': set()}
+            print(f"   Selecting server with most connections...")
+
+            # Analyze all reachable candidates without requirement filter
+            best_redist_server = aggregation_server
+            best_max_connections = 0
+            best_time_a = 0
+            best_time_b = 0
+            best_connected_sats = set()
+
+            for candidate_idx in range(num_satellites):
+                if not path_to_candidates[candidate_idx]['reachable']:
+                    continue
+
+                time_a = path_to_candidates[candidate_idx]['timesteps']
+                candidate_start_index = start_matrix_index + time_a
+                candidate_analysis = self.analyze_single_satellite(candidate_idx, candidate_start_index, total_remaining)
+
+                # Find fastest time to reach maximum connections
+                timestep_to_max = candidate_analysis['timestamps_to_max']
+                max_connections = candidate_analysis['max_connections']
+
+                # Select if this candidate has more connections
+                if max_connections > best_max_connections:
+                    best_redist_server = candidate_idx
+                    best_max_connections = max_connections
+                    best_time_a = time_a
+                    best_time_b = timestep_to_max
+                    best_connected_sats = candidate_analysis['connected_satellites']
+                    print(f"  ✓ Candidate {candidate_idx}: Best so far - {max_connections}/{num_satellites-1} connections")
+
+            print(f"\n✓ Selected Redistribution Server {best_redist_server} ({self.satellite_names[best_redist_server]}) (best available)")
+            print(f"  Time A (aggregation→redistribution): {best_time_a} timestamps")
+            print(f"  Time B (redistribution→max clients): {best_time_b} timestamps")
+            print(f"  Total time: {best_time_a + best_time_b} timestamps")
+            print(f"  Will reach {best_max_connections}/{num_satellites-1} clients")
+
+            return best_redist_server, best_time_a, {
+                'time_a': best_time_a,
+                'time_b': best_time_b,
+                'total_time': best_time_a + best_time_b,
+                'max_connections': best_max_connections,
+                'connected_satellites': best_connected_sats
+            }
 
         # Step 5: Select best redistribution server
         # Primary: minimum total_time
@@ -637,9 +678,13 @@ class Algorithm():
 
                 current_matrix_index += 1
 
-                # Safety timeout
+                # Safety timeout - when connect_to_all=true, continue with most connected
                 if timestep_in_phase >= 20:
-                    print(f"  ⚠ TRANSMITTING timeout after {timestep_in_phase} timestamps")
+                    if self.connect_to_all_satellites:
+                        print(f"  ⚠ TRANSMITTING timeout after {timestep_in_phase} timestamps")
+                        print(f"    Cannot connect to all satellites - proceeding with {len(connected_satellites)}/{target_connections_count} connected")
+                    else:
+                        print(f"  ⚠ TRANSMITTING timeout after {timestep_in_phase} timestamps")
                     phase_complete = True
 
             transmitting_length = timestep_in_phase
