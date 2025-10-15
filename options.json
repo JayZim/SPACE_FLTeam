@@ -16,6 +16,13 @@
         }
     },
     "algorithm": {
+        "fedavg_mode": false,
+        "static_server_id": 0,
+        "server_selection": {
+            "connect_to_all_satellites": false,
+            "max_lookahead": 20,
+            "minimum_connected_satellites": 5
+        },
         "module_settings": {
             "output_to_file": true
         }
