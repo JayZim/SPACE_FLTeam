@@ -396,6 +396,268 @@ class FLOutput(Output):
         except Exception as e:
             print(f"Error saving model: {e}")
 
+    def animate_client_participation(metrics_json_path, save_path=None):
+        import matplotlib.pyplot as plt
+        import matplotlib.animation as animation
+        import numpy as np
+        import json
+
+        with open(metrics_json_path, "r") as f:
+            metrics = json.load(f)
+
+        participation_log = metrics["additional_metrics"]["participation_log"]
+        num_timesteps = len(participation_log)
+        num_clients = max(
+            max([entry["aggregation_server"] if entry["aggregation_server"] is not None else 0] +
+                [entry["redistribution_server"] if entry["redistribution_server"] is not None else 0] +
+                entry["in_range_clients"] + entry["out_of_range_clients"])
+            for entry in participation_log
+        ) + 1
+
+        # Preprocess: Replace zeros with previous non-zero accuracy for skipped rounds
+        processed_accuracies = []
+        last_acc = None
+        for entry in participation_log:
+            acc = entry.get("accuracy", None)
+            if acc == 0 or acc is None:
+                processed_accuracies.append(last_acc if last_acc is not None else 0)
+            else:
+                processed_accuracies.append(acc)
+                last_acc = acc
+
+        angles = np.linspace(0, 2 * np.pi, num_clients, endpoint=False)
+        radius = 5
+        client_positions = [(radius * np.cos(a), radius * np.sin(a)) for a in angles]
+
+        # Sliding window parameters
+        window_size = 50
+        col_size = window_size // 2
+
+        fig = plt.figure(figsize=(16, 12))
+        gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 3])
+        ax_timeline1 = fig.add_subplot(gs[0, 0])
+        ax_timeline2 = fig.add_subplot(gs[0, 1])
+        ax = fig.add_subplot(gs[0, 2])
+        ax.set_xlim(-radius-2, radius+2)
+        ax.set_ylim(-radius-2.5, radius+2)
+        ax.set_aspect('equal')
+        ax.axis('off')
+
+        circles = []
+        arrows = []
+        phase_text = ax.text(0.5, 1.05, '', transform=ax.transAxes, fontsize=16, ha="center")
+        accuracy_text = ax.text(0.5, -0.18, '', transform=ax.transAxes, fontsize=14, ha="center")
+        round_acc_text = ax.text(0.5, 0.95, '', transform=ax.transAxes, fontsize=14, ha="center", color="purple")
+
+        def init():
+            for i, (x, y) in enumerate(client_positions):
+                circle = plt.Circle((x, y), 0.6, color='gray', alpha=0.5)
+                ax.add_patch(circle)
+                ax.text(x, y, f"{i+1}", fontsize=12, ha='center', va='center')
+                circles.append(circle)
+            return circles + [phase_text, accuracy_text, round_acc_text]
+
+        def update(frame):
+            for arrow in arrows:
+                arrow.remove()
+            arrows.clear()
+
+            data = participation_log[frame]
+            phase = data['phase']
+            agg_server = data['aggregation_server']
+            redist_server = data['redistribution_server']
+            in_range = data['in_range_clients']
+            out_range = data['out_of_range_clients']
+            acc = data['accuracy']
+            round_num = data.get('round', None)
+            processed_acc = processed_accuracies[frame]
+
+            # --- Sliding window logic ---
+            # Determine which window we're in
+            window_start = (frame // window_size) * window_size
+            window_end = min(window_start + window_size, num_timesteps)
+            col1_start = window_start
+            col1_end = min(window_start + col_size, window_end)
+            col2_start = col1_end
+            col2_end = window_end
+
+            # --- Draw timeline column 1 ---
+            ax_timeline1.clear()
+            ax_timeline1.set_ylim(col1_end - col1_start + 1, 0)
+            ax_timeline1.set_xlim(0, 1)
+            ax_timeline1.axis('off')
+            for idx, t in enumerate(range(col1_start, col1_end)):
+                entry = participation_log[t]
+                phase_label = entry['phase']
+                acc_val = processed_accuracies[t]
+                if t == frame:
+                    ax_timeline1.text(0.05, idx+1, f"Timestep {entry['timestep']}: {phase_label}", fontsize=12, color='blue', weight='bold', va='center')
+                    acc_str = f"{acc_val:.2%}" if acc_val != 0 else "Training Skipped"
+                    ax_timeline1.text(0.05, idx+1.5, f"Accuracy: {acc_str}", fontsize=12, color='red', weight='bold', va='center')
+                else:
+                    ax_timeline1.text(0.05, idx+1, f"Timestep {entry['timestep']}: {phase_label}", fontsize=10, color='gray', va='center')
+                    acc_str = f"{acc_val:.2%}" if acc_val != 0 else "Training Skipped"
+                    ax_timeline1.text(0.05, idx+1.5, f"Accuracy: {acc_str}", fontsize=9, color='gray', va='center')
+
+            # --- Draw timeline column 2 ---
+            ax_timeline2.clear()
+            ax_timeline2.set_ylim(col2_end - col2_start + 1, 0)
+            ax_timeline2.set_xlim(0, 1)
+            ax_timeline2.axis('off')
+            for idx, t in enumerate(range(col2_start, col2_end)):
+                entry = participation_log[t]
+                phase_label = entry['phase']
+                acc_val = processed_accuracies[t]
+                if t == frame:
+                    ax_timeline2.text(0.05, idx+1, f"Timestep {entry['timestep']}: {phase_label}", fontsize=12, color='blue', weight='bold', va='center')
+                    acc_str = f"{acc_val:.2%}" if acc_val != 0 else "Training Skipped"
+                    ax_timeline2.text(0.05, idx+1.5, f"Accuracy: {acc_str}", fontsize=12, color='red', weight='bold', va='center')
+                else:
+                    ax_timeline2.text(0.05, idx+1, f"Timestep {entry['timestep']}: {phase_label}", fontsize=10, color='gray', va='center')
+                    acc_str = f"{acc_val:.2%}" if acc_val != 0 else "Training Skipped"
+                    ax_timeline2.text(0.05, idx+1.5, f"Accuracy: {acc_str}", fontsize=9, color='gray', va='center')
+
+            # --- Draw participation diagram (same as before) ---
+            for i, circle in enumerate(circles):
+                if i == agg_server and phase == "TRANSMITTING":
+                    circle.set_color('gold')
+                    circle.set_alpha(1.0)
+                    circle.set_edgecolor('red')
+                    circle.set_linewidth(3)
+                elif i == redist_server and phase == "REDISTRIBUTION":
+                    circle.set_color('deepskyblue')
+                    circle.set_alpha(1.0)
+                    circle.set_edgecolor('blue')
+                    circle.set_linewidth(3)
+                elif i in in_range:
+                    if phase == "REDISTRIBUTION":
+                        circle.set_color('deepskyblue')
+                        circle.set_alpha(0.8)
+                    else:
+                        circle.set_color('green')
+                        circle.set_alpha(0.8)
+                    circle.set_edgecolor('black')
+                    circle.set_linewidth(1)
+                else:
+                    circle.set_color('gray')
+                    circle.set_alpha(0.3)
+                    circle.set_edgecolor('black')
+                    circle.set_linewidth(1)
+
+            if phase == "TRANSMITTING":
+                for i in in_range:
+                    if agg_server is not None and i != agg_server:
+                        x0, y0 = client_positions[i]
+                        x1, y1 = client_positions[agg_server]
+                        arrow = ax.annotate("",
+                                            xy=(x1, y1), xytext=(x0, y0),
+                                            arrowprops=dict(arrowstyle="->", color='green', lw=2))
+                        arrows.append(arrow)
+            elif phase == "CHECK":
+                if agg_server is not None and redist_server is not None and agg_server != redist_server:
+                    x0, y0 = client_positions[agg_server]
+                    x1, y1 = client_positions[redist_server]
+                    arrow = ax.annotate("",
+                                        xy=(x1, y1), xytext=(x0, y0),
+                                        arrowprops=dict(arrowstyle="->", color='orange', lw=2, linestyle='dashed'))
+                    arrows.append(arrow)
+            elif phase == "REDISTRIBUTION":
+                for i in in_range:
+                    if redist_server is not None and i != redist_server:
+                        x0, y0 = client_positions[redist_server]
+                        x1, y1 = client_positions[i]
+                        arrow = ax.annotate("",
+                                            xy=(x1, y1), xytext=(x0, y0),
+                                            arrowprops=dict(arrowstyle="->", color='deepskyblue', lw=2))
+                        arrows.append(arrow)
+
+            phase_label = f"Phase: {phase}"
+            if phase == "CHECK":
+                phase_label += " (Model transfer)"
+            elif phase == "REDISTRIBUTION":
+                phase_label += " (Global model distribution)"
+            phase_text.set_text(phase_label)
+
+            if acc is not None:
+                accuracy_text.set_text(f"Timestep: {data['timestep']} | Accuracy: {processed_acc:.2%}")
+            else:
+                accuracy_text.set_text(f"Timestep: {data['timestep']} | Training Skipped")
+
+            if round_num is not None:
+                if acc is not None:
+                    round_acc_text.set_text(f"Round: {round_num} | Accuracy: {processed_acc:.2%}")
+                else:
+                    round_acc_text.set_text(f"Round: {round_num} | Training Skipped")
+            else:
+                if acc is not None:
+                    round_acc_text.set_text(f"Accuracy: {processed_acc:.2%}")
+                else:
+                    round_acc_text.set_text("Training Skipped")
+
+            return circles + arrows + [phase_text, accuracy_text, round_acc_text]
+
+        ani = animation.FuncAnimation(fig, update, frames=num_timesteps,
+                                      init_func=init, blit=False, repeat=False)
+
+        if save_path:
+            ani.save(save_path, writer='pillow', fps=1)
+            print(f"Animation saved to {save_path}")
+        else:
+            plt.show()
+
+    def animate_accuracy_progress(metrics_json_path, save_path=None):
+        import matplotlib.pyplot as plt
+        import matplotlib.animation as animation
+        import json
+
+        with open(metrics_json_path, "r") as f:
+            metrics = json.load(f)
+
+        additional_metrics = metrics["additional_metrics"]
+        round_accuracies = additional_metrics.get("round_accuracies", [])
+        timesteps = list(range(1, len(round_accuracies) + 1))
+
+        # Preprocess: Replace zeros with previous non-zero accuracy for skipped rounds
+        processed_accuracies = []
+        last_acc = None
+        for acc in round_accuracies:
+            if acc == 0 or acc is None:
+                # Use last non-zero accuracy if available
+                processed_accuracies.append(last_acc if last_acc is not None else 0)
+            else:
+                processed_accuracies.append(acc)
+                last_acc = acc
+
+        fig, ax = plt.subplots(figsize=(10, 8))
+        ax.set_xlim(0, len(processed_accuracies) + 1)
+        ax.set_ylim(0.00, 1.05)
+        ax.set_xlabel("Timestep")
+        ax.set_ylabel("Accuracy")
+        ax.set_title("Federated Learning Accuracy Progression")
+
+        def update(frame):
+            ax.clear()
+            ax.set_xlim(0, len(processed_accuracies) + 1)
+            ax.set_ylim(0.00, 1.05)
+            ax.set_xlabel("Timestep")
+            ax.set_ylabel("Accuracy")
+            ax.set_title("Federated Learning Accuracy Progression")
+            ax.bar(timesteps[:frame+1], processed_accuracies[:frame+1], color="green", width=0.8)
+            acc = round_accuracies[frame]
+            if acc == 0 or acc is None:
+                accuracy_text = ax.text(0.5, 0.95, f"Timestep: {frame+1} | Training Skipped", transform=ax.transAxes, fontsize=14, ha="center")
+            else:
+                accuracy_text = ax.text(0.5, 0.95, f"Timestep: {frame+1} | Accuracy: {acc:.2%}", transform=ax.transAxes, fontsize=14, ha="center")
+            return [accuracy_text]
+
+        ani = animation.FuncAnimation(fig, update, frames=len(processed_accuracies), blit=False, repeat=False)
+
+        if save_path:
+            ani.save(save_path, writer='pillow', fps=2)
+            print(f"Animation saved to {save_path}")
+        else:
+            plt.show()
+
 
 def run_test():
     """
