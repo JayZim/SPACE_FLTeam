@@ -15,6 +15,9 @@ Changelog:
 - 2025-05-09: Added processing time tracking for rounds and overall training
 - 2025-10-04: Integrated FLAM file parsing and dynamic topology adaptation
 - 2025-09-24: Integrated Enhanced Model Evaluation Module and Model Selection Module
+- 2025-10-10: Added path manager for universal path handling, added accuracy-prioritized training strategies, added dataset switching, added model adaptation.
+
+
 
 Usage:
 Run this file directly to start a Multithreading instance of Tensorflow FL with the chosen number of clients rounds and model.
@@ -42,6 +45,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from federated_learning.fl_output import FLOutput
 from federated_learning.fl_visualization import FLVisualization
 from federated_learning.model_evaluation import EnhancedModelEvaluationModule
+from federated_learning.fl_adaptation import FLAdaptationSystem
 
 # Add path manager for universal path handling
 try:
@@ -102,7 +106,7 @@ class FederatedLearning:
         def update_model(self, global_state_dict):
             self.model.load_state_dict(global_state_dict)
 
-    def __init__(self, enable_model_evaluation=True):
+    def __init__(self, enable_model_evaluation=True, enable_adaptation=True):
         self.num_rounds = 10
         self.num_clients = 5
         self.global_model = None
@@ -111,6 +115,7 @@ class FederatedLearning:
         self.round_accuracies = []
         self.total_training_time = 0
         self.model_evaluation_enabled = enable_model_evaluation
+        self.adaptation_enabled = enable_adaptation
         self.model_eval_module = None
         self.selected_model_name = None
         self.model_evaluation_history = []
@@ -125,6 +130,18 @@ class FederatedLearning:
             except Exception as e:
                 print(f"Warning: Failed to initialize model evaluation module: {e}")
                 self.model_evaluation_enabled = False
+        
+        # Initialize lightweight adaptation system if enabled
+        if self.adaptation_enabled:
+            try:
+                self.adaptation_system = FLAdaptationSystem(self.model_eval_module)
+                print("✓ FL adaptation system initialized")
+                print("  - Dataset switching: MNIST, CIFAR10, EuroSAT")
+                print("  - Transfer learning: Intelligent weight preservation")
+                print("  - Model selection: Accuracy-optimized")
+            except Exception as e:
+                print(f"Warning: Failed to initialize adaptation system: {e}")
+                self.adaptation_enabled = False
 
     def set_num_rounds(self, rounds: int) -> None:
         """Set the number of federated learning rounds."""
@@ -158,15 +175,36 @@ class FederatedLearning:
         self.total_training_time = 0
         self.timestep = 0
 
-    def initialize_data(self, dataset_name="MNIST"):
-        """Initialize client data loaders with support for multiple datasets"""
+    def initialize_data(self, dataset_name="MNIST", use_heterogeneous=True):
+        """Initialize client data loaders using the lightweight adaptation system"""
         
+        if self.adaptation_enabled and hasattr(self, 'adaptation_system'):
+            # Use the lightweight adaptation system
+            print(f"Initializing {dataset_name} dataset with adaptation system...")
+            
+            try:
+                full_dataset = self.adaptation_system.dataset_adapter.load_dataset(dataset_name)
+                self.client_data = self.adaptation_system.dataset_adapter.create_client_splits(
+                    full_dataset, self.num_clients, use_heterogeneous=use_heterogeneous
+                )
+                print(f"✓ Created {len(self.client_data)} {'heterogeneous' if use_heterogeneous else 'homogeneous'} client splits")
+            except Exception as e:
+                print(f"Warning: Adaptation system failed, falling back to standard loading: {e}")
+                self._initialize_data_fallback(dataset_name)
+        else:
+            # Fallback to standard loading
+            self._initialize_data_fallback(dataset_name)
+        
+        self.current_dataset = dataset_name
+        print(f"✓ Initialized {dataset_name} dataset for {self.num_clients} clients")
+    
+    def _initialize_data_fallback(self, dataset_name="MNIST"):
+        """Fallback method for dataset loading without adaptation system"""
         if dataset_name == "MNIST":
             transform = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Normalize((0.5,), (0.5,))
             ])
-            # Use FL data directory
             data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'MNIST')
             full_dataset = torchvision.datasets.MNIST(root=data_root, train=True, download=True, transform=transform)
             
@@ -175,60 +213,74 @@ class FederatedLearning:
                 transforms.ToTensor(),
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
             ])
-            # Use FL data directory
             data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'CIFAR10')
             full_dataset = torchvision.datasets.CIFAR10(root=data_root, train=True, download=True, transform=transform)
             
         elif dataset_name == "EuroSAT":
-            # EuroSAT specific transforms with optimized data augmentation
             train_transform = transforms.Compose([
                 transforms.Resize((64, 64)),
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.RandomRotation(degrees=15),
                 transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-                transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.3443, 0.3804, 0.4086], std=[0.1814, 0.1535, 0.1311])
             ])
-            
-            # Use FL data directory for EuroSAT
             data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'EuroSAT')
             try:
                 full_dataset = torchvision.datasets.EuroSAT(root=data_root, download=True, transform=train_transform)
-                print(f"✓ EuroSAT dataset loaded successfully with {len(full_dataset)} samples")
             except Exception as e:
-                # Fallback to MNIST if EuroSAT is not available
-                print(f"Warning: EuroSAT dataset not available ({e}), falling back to MNIST")
-                mnist_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'MNIST')
-                full_dataset = torchvision.datasets.MNIST(root=mnist_root, train=True, download=True, 
-                                                        transform=transforms.Compose([
-                                                            transforms.ToTensor(),
-                                                            transforms.Normalize((0.5,), (0.5,))
-                                                        ]))
+                print(f"Warning: EuroSAT not available ({e}), falling back to MNIST")
+                return self._initialize_data_fallback("MNIST")
         else:
             # Default to MNIST
-            transform = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Normalize((0.5,), (0.5,))
-            ])
-            # Use FL data directory
-            data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'MNIST')
-            full_dataset = torchvision.datasets.MNIST(root=data_root, train=True, download=True, transform=transform)
+            return self._initialize_data_fallback("MNIST")
         
-        # Split dataset among clients
+        # Create standard client splits
         client_datasets = random_split(full_dataset, [len(full_dataset) // self.num_clients] * self.num_clients)
         self.client_data = [DataLoader(dataset, batch_size=32, shuffle=True) for dataset in client_datasets]
-        
-        print(f"✓ Initialized {dataset_name} dataset with {len(full_dataset)} samples for {self.num_clients} clients")
+        print(f"✓ Created {len(self.client_data)} standard client data loaders")
 
-    def initialize_model(self, model_name=None, auto_select=True, interactive_mode=True):
+    def initialize_model(self, model_name=None, auto_select=True, interactive_mode=True, 
+                        transfer_from_current=True):
         """
-        Initialize the global model with optional model selection.
+        Initialize the global model with intelligent selection and transfer learning support.
         
-        NOTE: This method creates the actual PyTorch models used in FL training.
-        It uses model_evaluation.py's ModelRegistry to create PyTorch models,
-        replacing any legacy TensorFlow models from model.py that were set via set_model().
+        Args:
+            model_name: Specific model to use (optional)
+            auto_select: Whether to auto-select the best model
+            interactive_mode: Whether to show interactive selection
+            transfer_from_current: Whether to attempt transfer learning from current model
         """
+        current_model = self.global_model if transfer_from_current else None
+        
+        if self.adaptation_enabled and hasattr(self, 'adaptation_system'):
+            # Use the lightweight adaptation system for model selection
+            print(f"Initializing model for {self.current_dataset} dataset...")
+            
+            try:
+                self.global_model = self.adaptation_system.model_adapter.select_model(
+                    self.current_dataset, model_name, current_model
+                )
+                
+                # Attempt transfer learning if we have a current model
+                if transfer_from_current and current_model and current_model != self.global_model:
+                    self.global_model = self.adaptation_system.model_adapter.transfer_weights(
+                        current_model, self.global_model
+                    )
+                
+                # Get model name for tracking
+                self.selected_model_name = self.global_model.__class__.__name__
+                print(f"✓ Model initialized: {self.selected_model_name}")
+                
+            except Exception as e:
+                print(f"Warning: Adaptation system model selection failed: {e}")
+                self._initialize_model_fallback(model_name, auto_select, interactive_mode)
+        else:
+            # Fallback to standard model initialization
+            self._initialize_model_fallback(model_name, auto_select, interactive_mode)
+    
+    def _initialize_model_fallback(self, model_name=None, auto_select=True, interactive_mode=True):
+        """Fallback method for model initialization without adaptation system"""
         if self.model_evaluation_enabled and auto_select and model_name is None:
             try:
                 # Show available models and let user choose
@@ -442,6 +494,78 @@ class FederatedLearning:
         else:
             print("Model evaluation not enabled. Cannot register custom model.")
     
+    def switch_dataset_and_model(self, new_dataset: str, new_model_name: str = None, 
+                                preserve_weights: bool = True) -> None:
+        """
+        Switch to a new dataset and optionally a new model with intelligent adaptation.
+        
+        Args:
+            new_dataset: Name of the new dataset to switch to
+            new_model_name: Name of the new model (optional, keeps current if None)
+            preserve_weights: Whether to attempt transfer learning
+        """
+        print(f"\n{'='*60}")
+        print(f"SWITCHING DATASET AND MODEL")
+        print(f"{'='*60}")
+        print(f"Current: {self.current_dataset} + {self.selected_model_name}")
+        print(f"Switching to: {new_dataset} + {new_model_name or 'auto-select'}")
+        
+        if self.adaptation_enabled and hasattr(self, 'adaptation_system'):
+            # Use the lightweight adaptation system
+            try:
+                # Get current model name for better transfer decisions
+                old_model_name = self.selected_model_name if hasattr(self, 'selected_model_name') else None
+                
+                # Switch dataset and model using adaptation system
+                new_model, client_data = self.adaptation_system.switch_dataset(
+                    self.current_dataset, new_dataset, self.global_model, preserve_weights,
+                    old_model_name=old_model_name
+                )
+                
+                # Update the FL system
+                self.global_model = new_model
+                self.client_data = client_data
+                self.current_dataset = new_dataset  # Update current dataset
+                self.selected_model_name = new_model.__class__.__name__
+                
+                # Show expected accuracy if available
+                if hasattr(self.adaptation_system.adaptation_strategy, 'get_expected_accuracy'):
+                    accuracy_range = self.adaptation_system.adaptation_strategy.get_expected_accuracy(
+                        self.selected_model_name, new_dataset
+                    )
+                    print(f"Expected accuracy range: {accuracy_range[0]:.1%} - {accuracy_range[1]:.1%}")
+                
+            except Exception as e:
+                print(f"Warning: Adaptation system failed: {e}")
+                self._switch_dataset_fallback(new_dataset, new_model_name, preserve_weights)
+        else:
+            # Fallback to standard switching
+            self._switch_dataset_fallback(new_dataset, new_model_name, preserve_weights)
+        
+        print(f"\n✓ Successfully switched to {new_dataset} + {self.selected_model_name}")
+        print(f"{'='*60}")
+    
+    def _switch_dataset_fallback(self, new_dataset: str, new_model_name: str = None, 
+                                preserve_weights: bool = True) -> None:
+        """Fallback method for dataset switching without adaptation system"""
+        # Store current model for potential transfer
+        current_model = self.global_model if preserve_weights else None
+        
+        # Switch dataset
+        print(f"Switching to {new_dataset} dataset...")
+        self.initialize_data(new_dataset)
+        self.current_dataset = new_dataset  # Update current dataset
+        
+        # Switch model
+        if new_model_name:
+            print(f"Switching to {new_model_name} model...")
+            self.initialize_model(new_model_name, auto_select=False, 
+                                transfer_from_current=preserve_weights)
+        else:
+            # Auto-select model with potential transfer
+            print("Auto-selecting model...")
+            self.initialize_model(transfer_from_current=preserve_weights)
+
     def get_latest_flam_file(self):
         """Get the latest generated FLAM file path"""
         if use_path_manager:
@@ -484,7 +608,7 @@ class FederatedLearning:
                 client_model.load_state_dict(self.global_model.state_dict())
                 print(f"Training client {client_id + 1}...")
 
-                state_dict, accuracy = self.train_client(client_model, data_loader, dataset_name)
+                state_dict, accuracy = self.train_client(client_model, data_loader, self.current_dataset)
                 client_models.append(state_dict)
                 round_correct += accuracy * len(data_loader.dataset)
                 round_total += len(data_loader.dataset)

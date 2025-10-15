@@ -142,14 +142,35 @@ class ModelSelection:
         
         return selected_model, selected_dataset
     
-    def get_auto_recommendation(self, dataset: str) -> str:
-        """Get automatic model recommendation based on dataset"""
+    def get_auto_recommendation(self, dataset: str, current_model: str = None) -> Tuple[str, bool]:
+        """Get automatic model recommendation based on dataset and current model
+        
+        Returns:
+            Tuple of (recommended_model, supports_transfer_learning)
+        """
+        # Base recommendations for optimal accuracy
         recommendations = {
             "EuroSAT": "EfficientNetB0",
             "CIFAR10": "ResNet50", 
             "MNIST": "SimpleCNN"
         }
-        return recommendations.get(dataset, "SimpleCNN")
+        
+        recommended_model = recommendations.get(dataset, "SimpleCNN")
+        
+        # Check if current model supports transfer learning to recommended model
+        supports_transfer = False
+        if current_model:
+            # Models that support transfer learning between similar architectures
+            transfer_compatible = {
+                "SimpleCNN": ["CustomCNN"],
+                "CustomCNN": ["SimpleCNN", "ResNet50"],
+                "ResNet50": ["EfficientNetB0", "VisionTransformer"],
+                "EfficientNetB0": ["ResNet50", "VisionTransformer"],
+                "VisionTransformer": ["EfficientNetB0", "ResNet50"]
+            }
+            supports_transfer = recommended_model in transfer_compatible.get(current_model, [])
+        
+        return recommended_model, supports_transfer
     
     def validate_combination(self, model: str, dataset: str) -> bool:
         """Validate if model-dataset combination is supported"""
@@ -164,10 +185,12 @@ class ModelSelection:
         
         return dataset in supported_combinations.get(model, [])
     
-    def show_combination_info(self, model: str, dataset: str) -> None:
-        """Show information about the selected combination"""
+    def show_combination_info(self, model: str, dataset: str, current_state: str = None) -> None:
+        """Show information about the selected combination with transfer learning info"""
         print(f"\n{'='*60}")
         print(f"Selected Combination: {model} + {dataset}")
+        if current_state:
+            print(f"Current State: {current_state}")
         print(f"{'='*60}")
         
         # Show expected performance
@@ -177,11 +200,24 @@ class ModelSelection:
             ("ResNet50", "CIFAR10"): "Expected accuracy: 75-85%",
             ("EfficientNetB0", "CIFAR10"): "Expected accuracy: 80-90%",
             ("SimpleCNN", "MNIST"): "Expected accuracy: 95-99%",
-            ("CustomCNN", "MNIST"): "Expected accuracy: 95-99%"
+            ("CustomCNN", "MNIST"): "Expected accuracy: 95-99%",
+            ("ResNet50", "MNIST"): "Expected accuracy: 97-99%",
+            ("EfficientNetB0", "MNIST"): "Expected accuracy: 96-99%",
+            ("VisionTransformer", "MNIST"): "Expected accuracy: 96-99%"
         }
         
         expected_perf = performance_info.get((model, dataset), "Performance varies")
         print(f"Expected Performance: {expected_perf}")
+        
+        # Show transfer learning information
+        if current_state:
+            recommended_model, supports_transfer = self.get_auto_recommendation(dataset, current_state)
+            if supports_transfer:
+                print(f"Transfer Learning: ✓ Compatible with current model ({current_state})")
+                print(f"  - Can preserve learned features for faster convergence")
+            else:
+                print(f"Transfer Learning: ✗ Limited compatibility with current model ({current_state})")
+                print(f"  - Fresh training recommended for optimal performance")
         
         # Show training characteristics
         if dataset == "EuroSAT":
