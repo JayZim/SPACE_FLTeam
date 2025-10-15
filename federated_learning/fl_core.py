@@ -1,6 +1,6 @@
 """
 Filename: federated_learning.py
-Description: Manage FLOWER Federated Learning epochs.
+Description: Manage tensorflow Federated Learning epochs.
 Author: Joshua Zimmerman
 Date: 2025-05-07
 Version: 1.0
@@ -15,6 +15,9 @@ Changelog:
 - 2025-05-09: Added processing time tracking for rounds and overall training
 - 2025-10-04: Integrated FLAM file parsing and dynamic topology adaptation
 - 2025-09-24: Integrated Enhanced Model Evaluation Module and Model Selection Module
+- 2025-10-10: Added path manager for universal path handling, added accuracy-prioritized training strategies, added dataset switching, added model adaptation.
+
+
 
 Usage:
 Run this file directly to start a Multithreading instance of Tensorflow FL with the chosen number of clients rounds and model.
@@ -42,6 +45,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from federated_learning.fl_output import FLOutput
 from federated_learning.fl_visualization import FLVisualization
 from federated_learning.model_evaluation import EnhancedModelEvaluationModule
+from federated_learning.fl_adaptation import FLAdaptationSystem
 
 # Add path manager for universal path handling
 try:
@@ -102,7 +106,7 @@ class FederatedLearning:
         def update_model(self, global_state_dict):
             self.model.load_state_dict(global_state_dict)
 
-    def __init__(self, enable_model_evaluation=True):
+    def __init__(self, enable_model_evaluation=True, enable_adaptation=True):
         self.num_rounds = 10
         self.num_clients = 5
         self.global_model = None
@@ -111,9 +115,12 @@ class FederatedLearning:
         self.round_accuracies = []
         self.total_training_time = 0
         self.model_evaluation_enabled = enable_model_evaluation
+        self.adaptation_enabled = enable_adaptation
         self.model_eval_module = None
         self.selected_model_name = None
         self.model_evaluation_history = []
+        self.participation_log = []
+        self.trained_clients_per_round = {}
         
         # Initialize model evaluation module if enabled
         if self.model_evaluation_enabled:
@@ -123,6 +130,18 @@ class FederatedLearning:
             except Exception as e:
                 print(f"Warning: Failed to initialize model evaluation module: {e}")
                 self.model_evaluation_enabled = False
+        
+        # Initialize lightweight adaptation system if enabled
+        if self.adaptation_enabled:
+            try:
+                self.adaptation_system = FLAdaptationSystem(self.model_eval_module)
+                print("✓ FL adaptation system initialized")
+                print("  - Dataset switching: MNIST, CIFAR10, EuroSAT")
+                print("  - Transfer learning: Intelligent weight preservation")
+                print("  - Model selection: Accuracy-optimized")
+            except Exception as e:
+                print(f"Warning: Failed to initialize adaptation system: {e}")
+                self.adaptation_enabled = False
 
     def set_num_rounds(self, rounds: int) -> None:
         """Set the number of federated learning rounds."""
@@ -156,15 +175,36 @@ class FederatedLearning:
         self.total_training_time = 0
         self.timestep = 0
 
-    def initialize_data(self, dataset_name="MNIST"):
-        """Initialize client data loaders with support for multiple datasets"""
+    def initialize_data(self, dataset_name="MNIST", use_heterogeneous=True):
+        """Initialize client data loaders using the lightweight adaptation system"""
         
+        if self.adaptation_enabled and hasattr(self, 'adaptation_system'):
+            # Use the lightweight adaptation system
+            print(f"Initializing {dataset_name} dataset with adaptation system...")
+            
+            try:
+                full_dataset = self.adaptation_system.dataset_adapter.load_dataset(dataset_name)
+                self.client_data = self.adaptation_system.dataset_adapter.create_client_splits(
+                    full_dataset, self.num_clients, use_heterogeneous=use_heterogeneous
+                )
+                print(f"✓ Created {len(self.client_data)} {'heterogeneous' if use_heterogeneous else 'homogeneous'} client splits")
+            except Exception as e:
+                print(f"Warning: Adaptation system failed, falling back to standard loading: {e}")
+                self._initialize_data_fallback(dataset_name)
+        else:
+            # Fallback to standard loading
+            self._initialize_data_fallback(dataset_name)
+        
+        self.current_dataset = dataset_name
+        print(f"✓ Initialized {dataset_name} dataset for {self.num_clients} clients")
+    
+    def _initialize_data_fallback(self, dataset_name="MNIST"):
+        """Fallback method for dataset loading without adaptation system"""
         if dataset_name == "MNIST":
             transform = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.Normalize((0.5,), (0.5,))
             ])
-            # Use FL data directory
             data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'MNIST')
             full_dataset = torchvision.datasets.MNIST(root=data_root, train=True, download=True, transform=transform)
             
@@ -173,60 +213,74 @@ class FederatedLearning:
                 transforms.ToTensor(),
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
             ])
-            # Use FL data directory
             data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'CIFAR10')
             full_dataset = torchvision.datasets.CIFAR10(root=data_root, train=True, download=True, transform=transform)
             
         elif dataset_name == "EuroSAT":
-            # EuroSAT specific transforms with optimized data augmentation
             train_transform = transforms.Compose([
                 transforms.Resize((64, 64)),
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.RandomRotation(degrees=15),
                 transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
-                transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.3443, 0.3804, 0.4086], std=[0.1814, 0.1535, 0.1311])
             ])
-            
-            # Use FL data directory for EuroSAT
             data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'EuroSAT')
             try:
                 full_dataset = torchvision.datasets.EuroSAT(root=data_root, download=True, transform=train_transform)
-                print(f"✓ EuroSAT dataset loaded successfully with {len(full_dataset)} samples")
             except Exception as e:
-                # Fallback to MNIST if EuroSAT is not available
-                print(f"Warning: EuroSAT dataset not available ({e}), falling back to MNIST")
-                mnist_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'MNIST')
-                full_dataset = torchvision.datasets.MNIST(root=mnist_root, train=True, download=True, 
-                                                        transform=transforms.Compose([
-                                                            transforms.ToTensor(),
-                                                            transforms.Normalize((0.5,), (0.5,))
-                                                        ]))
+                print(f"Warning: EuroSAT not available ({e}), falling back to MNIST")
+                return self._initialize_data_fallback("MNIST")
         else:
             # Default to MNIST
-            transform = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Normalize((0.5,), (0.5,))
-            ])
-            # Use FL data directory
-            data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'MNIST')
-            full_dataset = torchvision.datasets.MNIST(root=data_root, train=True, download=True, transform=transform)
+            return self._initialize_data_fallback("MNIST")
         
-        # Split dataset among clients
+        # Create standard client splits
         client_datasets = random_split(full_dataset, [len(full_dataset) // self.num_clients] * self.num_clients)
         self.client_data = [DataLoader(dataset, batch_size=32, shuffle=True) for dataset in client_datasets]
-        
-        print(f"✓ Initialized {dataset_name} dataset with {len(full_dataset)} samples for {self.num_clients} clients")
+        print(f"✓ Created {len(self.client_data)} standard client data loaders")
 
-    def initialize_model(self, model_name=None, auto_select=True, interactive_mode=True):
+    def initialize_model(self, model_name=None, auto_select=True, interactive_mode=True, 
+                        transfer_from_current=True):
         """
-        Initialize the global model with optional model selection.
+        Initialize the global model with intelligent selection and transfer learning support.
         
-        NOTE: This method creates the actual PyTorch models used in FL training.
-        It uses model_evaluation.py's ModelRegistry to create PyTorch models,
-        replacing any legacy TensorFlow models from model.py that were set via set_model().
+        Args:
+            model_name: Specific model to use (optional)
+            auto_select: Whether to auto-select the best model
+            interactive_mode: Whether to show interactive selection
+            transfer_from_current: Whether to attempt transfer learning from current model
         """
+        current_model = self.global_model if transfer_from_current else None
+        
+        if self.adaptation_enabled and hasattr(self, 'adaptation_system'):
+            # Use the lightweight adaptation system for model selection
+            print(f"Initializing model for {self.current_dataset} dataset...")
+            
+            try:
+                self.global_model = self.adaptation_system.model_adapter.select_model(
+                    self.current_dataset, model_name, current_model
+                )
+                
+                # Attempt transfer learning if we have a current model
+                if transfer_from_current and current_model and current_model != self.global_model:
+                    self.global_model = self.adaptation_system.model_adapter.transfer_weights(
+                        current_model, self.global_model
+                    )
+                
+                # Get model name for tracking
+                self.selected_model_name = self.global_model.__class__.__name__
+                print(f"✓ Model initialized: {self.selected_model_name}")
+                
+            except Exception as e:
+                print(f"Warning: Adaptation system model selection failed: {e}")
+                self._initialize_model_fallback(model_name, auto_select, interactive_mode)
+        else:
+            # Fallback to standard model initialization
+            self._initialize_model_fallback(model_name, auto_select, interactive_mode)
+    
+    def _initialize_model_fallback(self, model_name=None, auto_select=True, interactive_mode=True):
+        """Fallback method for model initialization without adaptation system"""
         if self.model_evaluation_enabled and auto_select and model_name is None:
             try:
                 # Show available models and let user choose
@@ -440,6 +494,78 @@ class FederatedLearning:
         else:
             print("Model evaluation not enabled. Cannot register custom model.")
     
+    def switch_dataset_and_model(self, new_dataset: str, new_model_name: str = None, 
+                                preserve_weights: bool = True) -> None:
+        """
+        Switch to a new dataset and optionally a new model with intelligent adaptation.
+        
+        Args:
+            new_dataset: Name of the new dataset to switch to
+            new_model_name: Name of the new model (optional, keeps current if None)
+            preserve_weights: Whether to attempt transfer learning
+        """
+        print(f"\n{'='*60}")
+        print(f"SWITCHING DATASET AND MODEL")
+        print(f"{'='*60}")
+        print(f"Current: {self.current_dataset} + {self.selected_model_name}")
+        print(f"Switching to: {new_dataset} + {new_model_name or 'auto-select'}")
+        
+        if self.adaptation_enabled and hasattr(self, 'adaptation_system'):
+            # Use the lightweight adaptation system
+            try:
+                # Get current model name for better transfer decisions
+                old_model_name = self.selected_model_name if hasattr(self, 'selected_model_name') else None
+                
+                # Switch dataset and model using adaptation system
+                new_model, client_data = self.adaptation_system.switch_dataset(
+                    self.current_dataset, new_dataset, self.global_model, preserve_weights,
+                    old_model_name=old_model_name
+                )
+                
+                # Update the FL system
+                self.global_model = new_model
+                self.client_data = client_data
+                self.current_dataset = new_dataset  # Update current dataset
+                self.selected_model_name = new_model.__class__.__name__
+                
+                # Show expected accuracy if available
+                if hasattr(self.adaptation_system.adaptation_strategy, 'get_expected_accuracy'):
+                    accuracy_range = self.adaptation_system.adaptation_strategy.get_expected_accuracy(
+                        self.selected_model_name, new_dataset
+                    )
+                    print(f"Expected accuracy range: {accuracy_range[0]:.1%} - {accuracy_range[1]:.1%}")
+                
+            except Exception as e:
+                print(f"Warning: Adaptation system failed: {e}")
+                self._switch_dataset_fallback(new_dataset, new_model_name, preserve_weights)
+        else:
+            # Fallback to standard switching
+            self._switch_dataset_fallback(new_dataset, new_model_name, preserve_weights)
+        
+        print(f"\n✓ Successfully switched to {new_dataset} + {self.selected_model_name}")
+        print(f"{'='*60}")
+    
+    def _switch_dataset_fallback(self, new_dataset: str, new_model_name: str = None, 
+                                preserve_weights: bool = True) -> None:
+        """Fallback method for dataset switching without adaptation system"""
+        # Store current model for potential transfer
+        current_model = self.global_model if preserve_weights else None
+        
+        # Switch dataset
+        print(f"Switching to {new_dataset} dataset...")
+        self.initialize_data(new_dataset)
+        self.current_dataset = new_dataset  # Update current dataset
+        
+        # Switch model
+        if new_model_name:
+            print(f"Switching to {new_model_name} model...")
+            self.initialize_model(new_model_name, auto_select=False, 
+                                transfer_from_current=preserve_weights)
+        else:
+            # Auto-select model with potential transfer
+            print("Auto-selecting model...")
+            self.initialize_model(transfer_from_current=preserve_weights)
+
     def get_latest_flam_file(self):
         """Get the latest generated FLAM file path"""
         if use_path_manager:
@@ -482,7 +608,7 @@ class FederatedLearning:
                 client_model.load_state_dict(self.global_model.state_dict())
                 print(f"Training client {client_id + 1}...")
 
-                state_dict, accuracy = self.train_client(client_model, data_loader, dataset_name)
+                state_dict, accuracy = self.train_client(client_model, data_loader, self.current_dataset)
                 client_models.append(state_dict)
                 round_correct += accuracy * len(data_loader.dataset)
                 round_total += len(data_loader.dataset)
@@ -536,17 +662,24 @@ class FederatedLearning:
     @staticmethod
     def parse_flam_file(flam_path):
         """
-        Parse the FLAM CSV file and yield a dict for each timestep:
+        Parse the new FLAM CSV file and yield a dict for each timestep:
         {
             'timestep': int,
             'round': int,
-            'target_node': int,
             'phase': str,
+            'aggregation_server': int or None,
+            'redistribution_server': int or None,
+            'target_node': int,
+            'phase_length': int,
+            'timestep_in_phase': int,
             'connected_sats': List[int],
             'missing_sats': List[int],
+            'target_sats': List[int],
+            'phase_complete': bool,
             'adjacency': List[List[int]]
         }
         """
+        import ast
         with open(flam_path, 'r') as f:
             lines = f.readlines()
 
@@ -554,24 +687,38 @@ class FederatedLearning:
         while i < len(lines):
             line = lines[i].strip()
             if line.startswith("Time:"):
-                # Parse header
                 header = line
                 timestep = int(re.search(r'Timestep: (\d+)', header).group(1))
                 round_num = int(re.search(r'Round: (\d+)', header).group(1))
-                target_node = int(re.search(r'Target Node: (\d+)', header).group(1))
                 phase = re.search(r'Phase: ([A-Z]+)', header).group(1)
-                connected_sats = eval(re.search(r'Connected Sats: (\[.*?\])', header).group(1))
-                missing_sats = eval(re.search(r'Missing Sats: (\[.*?\])', header).group(1))
+                aggregation_server = re.search(r'Aggregation Server: ([\w\d]+)', header)
+                aggregation_server = int(aggregation_server.group(1)) if aggregation_server and aggregation_server.group(1) != "TBD" else None
+                redistribution_server = re.search(r'Redistribution Server: ([\w\d]+)', header)
+                redistribution_server = redistribution_server.group(1)
+                redistribution_server = int(redistribution_server) if redistribution_server != "TBD" else None
+                target_node = int(re.search(r'Target Node: (\d+)', header).group(1))
+                phase_length = int(re.search(r'Phase Length: (\d+)', header).group(1))
+                timestep_in_phase = int(re.search(r'Timestep in Phase: (\d+)', header).group(1))
+                connected_sats = ast.literal_eval(re.search(r'Connected Sats: (\[.*?\])', header).group(1))
+                missing_sats = ast.literal_eval(re.search(r'Missing Sats: (\[.*?\])', header).group(1))
+                target_sats = ast.literal_eval(re.search(r'Target Sats: (\[.*?\])', header).group(1))
+                phase_complete = re.search(r'Phase Complete: (\w+)', header).group(1) == "True"
                 adjacency = []
                 for j in range(i+1, i+1+8):  # 8 clients/nodes
                     adjacency.append([int(x) for x in lines[j].strip().split(',')])
                 yield {
                     'timestep': timestep,
                     'round': round_num,
-                    'target_node': target_node,
                     'phase': phase,
+                    'aggregation_server': aggregation_server,
+                    'redistribution_server': redistribution_server,
+                    'target_node': target_node,
+                    'phase_length': phase_length,
+                    'timestep_in_phase': timestep_in_phase,
                     'connected_sats': connected_sats,
                     'missing_sats': missing_sats,
+                    'target_sats': target_sats,
+                    'phase_complete': phase_complete,
                     'adjacency': adjacency
                 }
                 i += 8
@@ -636,52 +783,99 @@ class FederatedLearning:
 
         for flam_entry in flam_schedule:
             print(f"\n--- Timestep {flam_entry['timestep']} | Round {flam_entry['round']} ---")
-            ps_client = flam_entry['target_node']
             phase = flam_entry['phase']
+            aggregation_server = flam_entry['aggregation_server']
+            redistribution_server = flam_entry['redistribution_server']
+            target_node = flam_entry['target_node']
             in_range_clients = flam_entry['connected_sats']
             out_of_range_clients = flam_entry['missing_sats']
 
-            print(f"Parameter Server for this timestep: Client {ps_client+1}")
+            round_num = flam_entry['round']
+            if round_num not in fl_instance.trained_clients_per_round:
+                fl_instance.trained_clients_per_round[round_num] = set()
+
             print(f"Phase: {phase}")
+            print(f"Aggregation Server: {aggregation_server}")
+            print(f"Redistribution Server: {redistribution_server}")
+            print(f"Target Node: {target_node}")
             print(f"In-range clients: {[f'Client {i+1}' for i in in_range_clients]}")
             print(f"Out-of-range clients: {[f'Client {i+1}' for i in out_of_range_clients]}")
-            print(f"Parameter Server (Client {ps_client+1}) will aggregate this timestep.")
+            print(f"Phase Complete: {flam_entry['phase_complete']}")
 
             # Distribute global model to all clients
             global_state = server.get_global_model().state_dict()
             for client in clients:
                 client.update_model(global_state)
 
-            # Only train during TRAINING phase
             round_accuracies_this = []
+
+            # Default avg_acc for all phases
+            avg_acc = None
+
             if phase == "TRANSMITTING":
+                # Only in-range clients train and send updates to aggregation server
                 for client_id, client in enumerate(clients):
                     if client_id in in_range_clients:
-                        state_dict, acc = client.train()
-                        server.receive_update(state_dict)
-                        round_accuracies_this.append(acc)
-                        print(f"Client {client.client_id+1} accuracy: {acc:.2%}")
+                        if client_id in self.trained_clients_per_round[round_num]:
+                            print(f"Client {client.client_id+1} already trained in round {round_num}, skipping.")
+                        else:
+                            state_dict, acc = client.train()
+                            server.receive_update(state_dict)
+                            round_accuracies_this.append(acc)
+                            self.trained_clients_per_round[round_num].add(client_id)
+                            print(f"Client {client.client_id+1} accuracy: {acc:.2%}")
                     else:
                         print(f"Client {client.client_id+1} skipped (out of range)")
-
-                # Server aggregates updates from in-range clients
+                # Aggregate updates
                 server.aggregate()
                 if round_accuracies_this:
                     avg_acc = sum(round_accuracies_this) / len(round_accuracies_this)
                     print(f"Timestep {flam_entry['timestep']} average in-range client accuracy: {avg_acc:.2%}")
                 else:
                     print(f"Timestep {flam_entry['timestep']}: No clients in range to train.")
-
                 self.round_times[f"timestep_{flam_entry['timestep']}"] = time.time() - total_start_time
                 round_accuracies.append(avg_acc if round_accuracies_this else 0)
+
+            elif phase == "CHECK":
+                # Transfer global model to redistribution server (no training, just transfer)
+                if redistribution_server is not None:
+                    print(f"Transferring global model from Aggregation Server {aggregation_server} to Redistribution Server {redistribution_server}")
+                else:
+                    print("Redistribution server not yet determined.")
+
+            elif phase == "REDISTRIBUTION":
+                # Distribute global model from redistribution server to all clients
+                print(f"Redistributing global model from Redistribution Server {redistribution_server} to all clients.")
+                for client_id, client in enumerate(clients):
+                    if client_id in in_range_clients:
+                        client.update_model(server.get_global_model().state_dict())
+                        print(f"Client {client.client_id+1} received global model.")
+                    else:
+                        print(f"Client {client.client_id+1} skipped (out of range)")
+
+            self.participation_log.append({
+                "timestep": flam_entry['timestep'],
+                "phase": phase,
+                "aggregation_server": aggregation_server,
+                "redistribution_server": redistribution_server,
+                "in_range_clients": in_range_clients,
+                "out_of_range_clients": out_of_range_clients,
+                "accuracy": avg_acc if phase == "TRANSMITTING" and round_accuracies_this else None
+            })
 
         self.total_training_time = time.time() - total_start_time
         self.round_accuracies = round_accuracies
 
+
         print(f"\nFederated learning process completed in {self.total_training_time:.2f} seconds.")
         print("\nTimestep-wise processing times and accuracies:")
         for idx, round_time in self.round_times.items():
-            print(f"{idx}: {round_time:.2f} seconds, Accuracy: {round_accuracies[int(idx.split('_')[1]) - 1]:.2%}")
+            timestep_num = int(idx.split('_')[1]) - 1
+            if timestep_num < len(round_accuracies):
+                acc = round_accuracies[timestep_num]
+                print(f"{idx}: {round_time:.2f} seconds, Accuracy: {acc:.2%}")
+            else:
+                print(f"{idx}: {round_time:.2f} seconds, Accuracy: N/A")
         print(f"Average timestep time: {self.total_training_time/len(self.round_times):.2f} seconds")
 
 if __name__ == "__main__":
@@ -689,8 +883,8 @@ if __name__ == "__main__":
     # Default customization values
     num_rounds = 5
     num_clients = 8
-    model_type = "SimpleCNN"
-    data_set = "MNIST"
+    model_type = "EfficientNetB0"
+    data_set = "EuroSAT"
 
     # Create timestamped run directory under results_from_output
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -712,7 +906,44 @@ if __name__ == "__main__":
     fl_instance.run(flam_path=flam_path)
 
     # Evaluate the model
-    output = FLOutput()
+    from torchvision import datasets, transforms
+
+    if data_set == "MNIST":
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
+        test_dataset = datasets.MNIST(
+            root=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'MNIST'),
+            train=False,
+            download=True,
+            transform=transform
+        )
+    elif data_set == "EuroSAT":
+        transform = transforms.Compose([
+            transforms.Resize((64, 64)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.3443, 0.3804, 0.4086], std=[0.1814, 0.1535, 0.1311])
+        ])
+        test_dataset = datasets.EuroSAT(
+            root=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'EuroSAT'),
+            download=True,
+            transform=transform
+        )
+    else:
+        # Default to MNIST
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
+        test_dataset = datasets.MNIST(
+            root=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'MNIST'),
+            train=False,
+            download=True,
+            transform=transform
+        )
+
+    output = FLOutput(test_dataset=test_dataset)
     output.evaluate_model(fl_instance.global_model, fl_instance.total_training_time)
 
     # Add timing and accuracy metrics
@@ -722,6 +953,7 @@ if __name__ == "__main__":
 
     # Add round accuracies explicitly
     output.add_metric("round_accuracies", fl_instance.round_accuracies)
+    output.add_metric("participation_log", fl_instance.participation_log)
 
     # Save results into this run folder
     log_file = os.path.join(run_dir, f"results_{timestamp}.log")

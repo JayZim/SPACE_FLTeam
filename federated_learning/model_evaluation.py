@@ -49,6 +49,11 @@ class ModelInfo:
     description: str
     category: str  # e.g., "CNN", "ResNet", "Transformer"
     complexity: str  # e.g., "Low", "Medium", "High"
+    compatible_datasets: List[str]  # List of compatible dataset names
+    supports_transfer: bool  # Whether model supports transfer learning
+    input_spec: Dict[str, Any]  # Input specifications (shape, channels, etc.)
+    output_spec: Dict[str, Any]  # Output specifications (num_classes, etc.)
+    expected_accuracy: Dict[str, Tuple[float, float]]  # Expected accuracy ranges per dataset
 
 class ModelRegistry:
     """Registry for managing available models"""
@@ -69,14 +74,19 @@ class ModelRegistry:
     
     def _register_default_models(self):
         """Register default models available in the system"""
-        # Simple CNN
+        # Simple CNN - 统一使用 64x64 RGB 输入
         self.register_model(
             name="SimpleCNN",
             model_class=self._create_simple_cnn,
-            parameters={"input_shape": (28, 28, 1), "num_classes": 10},
-            description="Simple Convolutional Neural Network for MNIST",
+            parameters={"input_shape": (64, 64, 3), "num_classes": 10},
+            description="Simple Convolutional Neural Network - 64x64 RGB",
             category="CNN",
-            complexity="Low"
+            complexity="Low",
+            compatible_datasets=["MNIST", "CIFAR10", "EuroSAT"],
+            supports_transfer=True,
+            input_spec={"shape": (64, 64, 3), "channels": 3},
+            output_spec={"num_classes": 10},
+            expected_accuracy={"MNIST": (0.95, 0.99), "CIFAR10": (0.70, 0.80), "EuroSAT": (0.75, 0.85)}
         )
         
         # ResNet50
@@ -86,17 +96,27 @@ class ModelRegistry:
             parameters={"input_shape": (32, 32, 3), "num_classes": 10},
             description="ResNet50 adapted for MNIST classification",
             category="ResNet",
-            complexity="High"
+            complexity="High",
+            compatible_datasets=["MNIST", "CIFAR10", "EuroSAT"],
+            supports_transfer=True,
+            input_spec={"shape": (32, 32, 3), "channels": 3},
+            output_spec={"num_classes": 10},
+            expected_accuracy={"MNIST": (0.97, 0.99), "CIFAR10": (0.75, 0.85), "EuroSAT": (0.80, 0.90)}
         )
         
-        # Custom CNN
+        # Custom CNN - 统一使用 64x64 RGB 输入
         self.register_model(
             name="CustomCNN",
             model_class=self._create_custom_cnn,
-            parameters={"input_shape": (28, 28, 1), "num_classes": 10, "filters": [32, 64, 128]},
-            description="Custom CNN with configurable filters",
+            parameters={"input_shape": (64, 64, 3), "num_classes": 10, "filters": [32, 64, 128]},
+            description="Custom CNN with configurable filters - 64x64 RGB",
             category="CNN",
-            complexity="Medium"
+            complexity="Medium",
+            compatible_datasets=["MNIST", "CIFAR10", "EuroSAT"],
+            supports_transfer=True,
+            input_spec={"shape": (64, 64, 3), "channels": 3},
+            output_spec={"num_classes": 10},
+            expected_accuracy={"MNIST": (0.95, 0.99), "CIFAR10": (0.70, 0.80), "EuroSAT": (0.75, 0.85)}
         )
         
         # EfficientNet-B0 (EuroSAT optimized)
@@ -106,7 +126,12 @@ class ModelRegistry:
             parameters={"input_shape": (64, 64, 3), "num_classes": 10},
             description="EfficientNet-B0 optimized for EuroSAT dataset",
             category="EfficientNet",
-            complexity="Medium"
+            complexity="Medium",
+            compatible_datasets=["MNIST", "CIFAR10", "EuroSAT"],
+            supports_transfer=True,
+            input_spec={"shape": (64, 64, 3), "channels": 3},
+            output_spec={"num_classes": 10},
+            expected_accuracy={"MNIST": (0.96, 0.99), "CIFAR10": (0.80, 0.90), "EuroSAT": (0.85, 0.95)}
         )
         
         # Vision Transformer (ViT) (Modern architecture)
@@ -116,11 +141,19 @@ class ModelRegistry:
             parameters={"input_shape": (64, 64, 3), "num_classes": 10, "patch_size": 16, "embed_dim": 192},
             description="Vision Transformer for modern image classification",
             category="Transformer",
-            complexity="High"
+            complexity="High",
+            compatible_datasets=["MNIST", "CIFAR10", "EuroSAT"],
+            supports_transfer=True,
+            input_spec={"shape": (64, 64, 3), "channels": 3},
+            output_spec={"num_classes": 10},
+            expected_accuracy={"MNIST": (0.96, 0.99), "CIFAR10": (0.80, 0.90), "EuroSAT": (0.80, 0.90)}
         )
     
     def register_model(self, name: str, model_class: type, parameters: Dict[str, Any], 
-                      description: str, category: str, complexity: str):
+                      description: str, category: str, complexity: str,
+                      compatible_datasets: List[str] = None, supports_transfer: bool = True,
+                      input_spec: Dict[str, Any] = None, output_spec: Dict[str, Any] = None,
+                      expected_accuracy: Dict[str, Tuple[float, float]] = None):
         """Register a new model in the registry"""
         model_info = ModelInfo(
             name=name,
@@ -128,7 +161,12 @@ class ModelRegistry:
             parameters=parameters,
             description=description,
             category=category,
-            complexity=complexity
+            complexity=complexity,
+            compatible_datasets=compatible_datasets or [],
+            supports_transfer=supports_transfer,
+            input_spec=input_spec or {},
+            output_spec=output_spec or {},
+            expected_accuracy=expected_accuracy or {}
         )
         self.models[name] = model_info
         logger.info(f"Registered model: {name}")
@@ -146,21 +184,25 @@ class ModelRegistry:
         return [name for name, info in self.models.items() if info.category == category]
     
     def _create_simple_cnn(self, **kwargs):
-        """Create Simple CNN model"""
+        """Create Simple CNN model - 统一使用 64x64 RGB 输入"""
         class SimpleCNN(nn.Module):
-            def __init__(self, input_shape=(28, 28, 1), num_classes=10):
+            def __init__(self, input_shape=(64, 64, 3), num_classes=10):
                 super(SimpleCNN, self).__init__()
-                self.conv1 = nn.Conv2d(input_shape[2], 32, kernel_size=3, padding=1)
+                # 统一使用 3 通道 64x64 输入
+                self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
                 self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+                self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
                 self.pool = nn.MaxPool2d(2, 2)
-                self.fc1 = nn.Linear(64 * 7 * 7, 128)
-                self.fc2 = nn.Linear(128, num_classes)
+                # 64x64 -> 32x32 -> 16x16 -> 8x8 (3 pooling layers)
+                self.fc1 = nn.Linear(128 * 8 * 8, 256)
+                self.fc2 = nn.Linear(256, num_classes)
                 self.dropout = nn.Dropout(0.5)
                 
             def forward(self, x):
-                x = self.pool(torch.relu(self.conv1(x)))
-                x = self.pool(torch.relu(self.conv2(x)))
-                x = x.view(-1, 64 * 7 * 7)
+                x = self.pool(torch.relu(self.conv1(x)))  # 64 -> 32
+                x = self.pool(torch.relu(self.conv2(x)))  # 32 -> 16
+                x = self.pool(torch.relu(self.conv3(x)))  # 16 -> 8
+                x = x.view(-1, 128 * 8 * 8)
                 x = torch.relu(self.fc1(x))
                 x = self.dropout(x)
                 x = self.fc2(x)
@@ -548,9 +590,15 @@ class EnhancedModelEvaluationModule:
         self.device = device
     
     def register_custom_model(self, name: str, model_class: type, parameters: Dict[str, Any],
-                            description: str, category: str, complexity: str):
-        """Register a custom model"""
-        self.registry.register_model(name, model_class, parameters, description, category, complexity)
+                            description: str, category: str, complexity: str,
+                            compatible_datasets: List[str] = None, supports_transfer: bool = True,
+                            input_spec: Dict[str, Any] = None, output_spec: Dict[str, Any] = None,
+                            expected_accuracy: Dict[str, Tuple[float, float]] = None):
+        """Register a custom model with enhanced metadata"""
+        self.registry.register_model(
+            name, model_class, parameters, description, category, complexity,
+            compatible_datasets, supports_transfer, input_spec, output_spec, expected_accuracy
+        )
     
     def evaluate_all_models(self, data_loader, criterion: nn.Module, 
                            num_epochs: int = 3) -> Dict[str, ModelMetrics]:

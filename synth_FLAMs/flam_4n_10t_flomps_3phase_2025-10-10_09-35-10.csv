@@ -1,0 +1,50 @@
+Time: 2025-10-10 09:35:10, Timestep: 1, Round: 1, Phase: TRANSMITTING, Aggregation Server: 0, Redistribution Server: TBD, Target Node: 0, Phase Length: 1, Timestep in Phase: 1, Current Connections: 1, Cumulative Connections: 1/1, Connected Sats: [2], Missing Sats: [], Target Sats: [2], Phase Complete: True
+0,0,1,0
+0,0,0,1
+1,0,0,0
+0,1,0,0
+Time: 2025-10-10 09:36:10, Timestep: 2, Round: 1, Phase: REDISTRIBUTION, Aggregation Server: 0, Redistribution Server: 0, Target Node: 0, Phase Length: 1, Timestep in Phase: 1, Current Connections: 1, Cumulative Connections: 1/0, Connected Sats: [2], Missing Sats: [], Target Sats: [], Phase Complete: True
+0,0,1,0
+0,0,0,1
+1,0,0,0
+0,1,0,0
+Time: 2025-10-10 09:37:10, Timestep: 3, Round: 2, Phase: TRANSMITTING, Aggregation Server: 0, Redistribution Server: TBD, Target Node: 0, Phase Length: 1, Timestep in Phase: 1, Current Connections: 1, Cumulative Connections: 1/1, Connected Sats: [2], Missing Sats: [], Target Sats: [2], Phase Complete: True
+0,0,1,0
+0,0,0,1
+1,0,0,0
+0,1,0,0
+Time: 2025-10-10 09:38:10, Timestep: 4, Round: 2, Phase: REDISTRIBUTION, Aggregation Server: 0, Redistribution Server: 0, Target Node: 0, Phase Length: 1, Timestep in Phase: 1, Current Connections: 1, Cumulative Connections: 1/0, Connected Sats: [2], Missing Sats: [], Target Sats: [], Phase Complete: True
+0,0,1,0
+0,0,0,1
+1,0,0,0
+0,1,0,0
+Time: 2025-10-10 09:39:10, Timestep: 5, Round: 3, Phase: TRANSMITTING, Aggregation Server: 0, Redistribution Server: TBD, Target Node: 0, Phase Length: 1, Timestep in Phase: 1, Current Connections: 1, Cumulative Connections: 1/1, Connected Sats: [2], Missing Sats: [], Target Sats: [2], Phase Complete: True
+0,0,1,0
+0,0,0,1
+1,0,0,0
+0,1,0,0
+Time: 2025-10-10 09:40:10, Timestep: 6, Round: 3, Phase: REDISTRIBUTION, Aggregation Server: 0, Redistribution Server: 0, Target Node: 0, Phase Length: 1, Timestep in Phase: 1, Current Connections: 1, Cumulative Connections: 1/0, Connected Sats: [2], Missing Sats: [], Target Sats: [], Phase Complete: True
+0,0,1,0
+0,0,0,1
+1,0,0,0
+0,1,0,0
+Time: 2025-10-10 09:41:10, Timestep: 7, Round: 4, Phase: TRANSMITTING, Aggregation Server: 0, Redistribution Server: TBD, Target Node: 0, Phase Length: 1, Timestep in Phase: 1, Current Connections: 1, Cumulative Connections: 1/1, Connected Sats: [2], Missing Sats: [], Target Sats: [2], Phase Complete: True
+0,0,1,0
+0,0,0,1
+1,0,0,0
+0,1,0,0
+Time: 2025-10-10 09:42:10, Timestep: 8, Round: 4, Phase: REDISTRIBUTION, Aggregation Server: 0, Redistribution Server: 0, Target Node: 0, Phase Length: 1, Timestep in Phase: 1, Current Connections: 1, Cumulative Connections: 1/0, Connected Sats: [2], Missing Sats: [], Target Sats: [], Phase Complete: True
+0,0,1,0
+0,0,0,1
+1,0,0,0
+0,1,0,0
+Time: 2025-10-10 09:43:10, Timestep: 9, Round: 5, Phase: TRANSMITTING, Aggregation Server: 0, Redistribution Server: TBD, Target Node: 0, Phase Length: 1, Timestep in Phase: 1, Current Connections: 1, Cumulative Connections: 1/1, Connected Sats: [2], Missing Sats: [], Target Sats: [2], Phase Complete: True
+0,0,1,0
+0,0,0,1
+1,0,0,0
+0,1,0,0
+Time: 2025-10-10 09:44:10, Timestep: 10, Round: 5, Phase: REDISTRIBUTION, Aggregation Server: 0, Redistribution Server: 0, Target Node: 0, Phase Length: 1, Timestep in Phase: 1, Current Connections: 1, Cumulative Connections: 1/0, Connected Sats: [2], Missing Sats: [], Target Sats: [], Phase Complete: True
+0,0,1,0
+0,0,0,1
+1,0,0,0
+0,1,0,0
