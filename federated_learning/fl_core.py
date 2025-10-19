@@ -661,25 +661,8 @@ class FederatedLearning:
 
     @staticmethod
     def parse_flam_file(flam_path):
-        """
-        Parse the new FLAM CSV file and yield a dict for each timestep:
-        {
-            'timestep': int,
-            'round': int,
-            'phase': str,
-            'aggregation_server': int or None,
-            'redistribution_server': int or None,
-            'target_node': int,
-            'phase_length': int,
-            'timestep_in_phase': int,
-            'connected_sats': List[int],
-            'missing_sats': List[int],
-            'target_sats': List[int],
-            'phase_complete': bool,
-            'adjacency': List[List[int]]
-        }
-        """
         import ast
+        current_round = 1
         with open(flam_path, 'r') as f:
             lines = f.readlines()
 
@@ -689,7 +672,13 @@ class FederatedLearning:
             if line.startswith("Time:"):
                 header = line
                 timestep = int(re.search(r'Timestep: (\d+)', header).group(1))
-                round_num = int(re.search(r'Round: (\d+)', header).group(1))
+                # Prefer explicit Round field from the FLAM header if present
+                round_match = re.search(r'Round: (\d+)', header)
+                if round_match:
+                    parsed_round = int(round_match.group(1))
+                else:
+                    parsed_round = current_round
+
                 phase = re.search(r'Phase: ([A-Z]+)', header).group(1)
                 aggregation_server = re.search(r'Aggregation Server: ([\w\d]+)', header)
                 aggregation_server = int(aggregation_server.group(1)) if aggregation_server and aggregation_server.group(1) != "TBD" else None
@@ -708,7 +697,7 @@ class FederatedLearning:
                     adjacency.append([int(x) for x in lines[j].strip().split(',')])
                 yield {
                     'timestep': timestep,
-                    'round': round_num,
+                    'round': parsed_round,
                     'phase': phase,
                     'aggregation_server': aggregation_server,
                     'redistribution_server': redistribution_server,
@@ -721,6 +710,9 @@ class FederatedLearning:
                     'phase_complete': phase_complete,
                     'adjacency': adjacency
                 }
+                # If FLAM didn't include an explicit Round field, increment current_round when phase completes
+                if not round_match and phase_complete:
+                    current_round += 1
                 i += 8
             i += 1
 
@@ -853,14 +845,18 @@ class FederatedLearning:
                     else:
                         print(f"Client {client.client_id+1} skipped (out of range)")
 
+            # After processing each flam_entry
+            is_last_phase_of_round = flam_entry.get("phase_complete", False)
             self.participation_log.append({
                 "timestep": flam_entry['timestep'],
+                "round": flam_entry['round'],
                 "phase": phase,
                 "aggregation_server": aggregation_server,
                 "redistribution_server": redistribution_server,
                 "in_range_clients": in_range_clients,
                 "out_of_range_clients": out_of_range_clients,
-                "accuracy": avg_acc if phase == "TRANSMITTING" and round_accuracies_this else None
+                "accuracy": avg_acc if phase == "TRANSMITTING" and round_accuracies_this else None,
+                "round_complete": is_last_phase_of_round
             })
 
         self.total_training_time = time.time() - total_start_time
@@ -975,3 +971,33 @@ if __name__ == "__main__":
     viz = FLVisualization(results_dir=run_dir)
     viz.visualize_from_json(metrics_file)
     print(f"Visualizations saved under {run_dir}")
+
+    # Ask the user if they want to generate the animations now
+    try:
+        choice = input("\nGenerate animations for this run? (1 = Yes, 2 = No) : ").strip()
+    except KeyboardInterrupt:
+        choice = "2"
+
+    if choice == "1":
+        print("Generating animations...")
+        try:
+            acc_gif = os.path.join(run_dir, "accuracy_progress.gif")
+            part_gif = os.path.join(run_dir, "client_participation.gif")
+            FLOutput.animate_accuracy_progress(metrics_file, save_path=acc_gif)
+            FLOutput.animate_client_participation(metrics_file, save_path=part_gif)
+            print(f"Animations saved to {run_dir}")
+        except Exception as e:
+            print(f"Failed to generate animations: {e}")
+
+    # Ask the user if they want to create a comparison dashboard (opens new prompt)
+    try:
+        dash_choice = input("\nCreate comparison dashboard now? (1 = Yes, 2 = No) : ").strip()
+    except KeyboardInterrupt:
+        dash_choice = "2"
+
+    if dash_choice == "1":
+        try:
+            from federated_learning.dashboard_compare import run_dashboard_creator
+            run_dashboard_creator()
+        except Exception as e:
+            print(f"Failed to create/open dashboard: {e}")
