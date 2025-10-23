@@ -164,11 +164,21 @@ class AlgorithmHandler(Handler):
                 self.send_adjmatrices(self.adjacency_matrices)
 
     def parse_file(self, file_name):
-        result_read = self.read_adjacency_matrices(file_name)
-        if len(result_read) == 1:
-            self.adjacency_matrices = result_read[0]
+        # Check if file is TLE format and run satellite simulation first
+        if self.is_tle_file(file_name):
+            print(f"📡 Detected TLE file: {file_name}")
+            print("🔄 Running satellite simulation to generate adjacency matrices...")
+            adjacency_matrices, satellite_names = self.run_satellite_simulation(file_name)
+            self.adjacency_matrices = adjacency_matrices
+            self.sat_names = satellite_names
         else:
-            self.sat_names, self.adjacency_matrices = result_read
+            # Original logic for adjacency matrix files
+            result_read = self.read_adjacency_matrices(file_name)
+            if len(result_read) == 1:
+                self.adjacency_matrices = result_read[0]
+            else:
+                self.sat_names, self.adjacency_matrices = result_read
+        
         if self.validate_adjacency_matrices(self.adjacency_matrices):
             if not self.sat_names:
                 no_of_rows = self.adjacency_matrices[0][1].shape[0]
@@ -182,6 +192,72 @@ class AlgorithmHandler(Handler):
 
     def send_satNames(self, sat_names):
         self.algorithm.set_satellite_names(sat_names)
+    
+    def is_tle_file(self, file_name):
+        """Check if file is a TLE file based on extension and content."""
+        if not file_name.lower().endswith('.tle'):
+            return False
+        
+        try:
+            with open(file_name, 'r') as f:
+                first_line = f.readline().strip()
+                # TLE files typically start with satellite names (not "Time: ")
+                return not first_line.startswith("Time: ")
+        except:
+            return False
+    
+    def run_satellite_simulation(self, tle_file):
+        """Run satellite simulation to generate adjacency matrices from TLE file."""
+        try:
+            # Import satellite simulation components
+            from sat_sim.sat_sim import SatSim
+            from skyfield.api import load
+            
+            # Create time objects (use current date for simulation)
+            ts = load.timescale()
+            from datetime import datetime
+            now = datetime.now()
+            start_time = ts.utc(now.year, now.month, now.day, 0, 0, 0)
+            end_time = ts.utc(now.year, now.month, now.day, 1, 0, 0)  # 1 hour simulation
+            
+            # Create SatSim instance
+            sat_sim = SatSim(
+                start_time=start_time,
+                end_time=end_time,
+                timestep=1,
+                output_file_type='txt',
+                gui_enabled=False,
+                output_to_file=False
+            )
+            
+            # Load TLE data
+            tle_data = {}
+            with open(tle_file, 'r') as f:
+                lines = [line.strip() for line in f.readlines()]
+            
+            i = 0
+            while i < len(lines):
+                if i + 2 < len(lines):
+                    name = lines[i].strip()
+                    tle_line1 = lines[i + 1].strip()
+                    tle_line2 = lines[i + 2].strip()
+                    tle_data[name] = [tle_line1, tle_line2]
+                    i += 3
+                else:
+                    break
+            
+            sat_sim.set_tle_data(tle_data)
+            
+            # Run simulation
+            matrices = sat_sim.run_with_adj_matrix()
+            satellite_names = list(tle_data.keys())
+            
+            print(f"✅ Satellite simulation completed: {len(matrices)} timesteps, {len(satellite_names)} satellites")
+            return matrices, satellite_names
+            
+        except Exception as e:
+            print(f"❌ Satellite simulation failed: {e}")
+            raise
 
     def run_module(self):
         self.algorithm.start_algorithm_steps()

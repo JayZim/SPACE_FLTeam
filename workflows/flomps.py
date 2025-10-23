@@ -138,6 +138,72 @@ def run(input_file, options, timesteps=None, custom_duration=None):
         print("[INFO] Using auto-detection approach (latest FLAM file)...")
         fl_module.handler.run_module()  # This will auto-detect the latest FLAM file
     
+    # Step 3.5: FL Output - Save FL results
+    print("\n📊 Step 3.5: Saving FL Results...")
+    try:
+        # Get FL results
+        fl_result = fl_module.output.get_result()
+        
+        # Create timestamped output directory
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        fl_output_dir = os.path.join(os.path.dirname(__file__), "..", "federated_learning", "results_from_output", timestamp)
+        os.makedirs(fl_output_dir, exist_ok=True)
+        
+        # Save FL results to files
+        log_file = os.path.join(fl_output_dir, f"fl_results_{timestamp}.log")
+        metrics_file = os.path.join(fl_output_dir, f"fl_metrics_{timestamp}.json")
+        model_file = os.path.join(fl_output_dir, f"fl_model_{timestamp}.pt")
+        
+        # Log results and save files
+        fl_module.output.log_result(log_file)
+        fl_module.output.write_to_file(metrics_file, format="json")
+        fl_module.output.save_model(model_file)
+        
+        print("✅ FL results saved to:")
+        print(f"   Log file: {log_file}")
+        print(f"   Metrics file: {metrics_file}")
+        print(f"   Model file: {model_file}")
+        
+        # Generate animations based on algorithm mode
+        print("\n🎨 Step 3.6: Generating FL Visualizations...")
+        try:
+            from federated_learning.fl_output import FLOutput
+            from federated_learning.fl_visualization import FLVisualization
+            
+            # Check if we're in FedAvg mode
+            is_fedavg_mode = options.get('algorithm', {}).get('fedavg_mode', False)
+            
+            # Generate animations with appropriate naming
+            if is_fedavg_mode:
+                acc_gif = os.path.join(fl_output_dir, "accuracy_fedavg.gif")
+                part_gif = os.path.join(fl_output_dir, "participation_fedavg.gif")
+                print("🎬 Generating FedAvg mode animations...")
+            else:
+                acc_gif = os.path.join(fl_output_dir, "accuracy_progress.gif")
+                part_gif = os.path.join(fl_output_dir, "client_participation.gif")
+                print("🎬 Generating FLOMPS mode animations...")
+            
+            # Generate animations
+            FLOutput.animate_accuracy_progress(metrics_file, save_path=acc_gif)
+            FLOutput.animate_client_participation(metrics_file, save_path=part_gif)
+            
+            # Generate dashboard
+            viz = FLVisualization(results_dir=fl_output_dir)
+            viz.visualize_from_json(metrics_file)
+            
+            print(f"✅ Visualizations generated:")
+            print(f"   - Dashboard: {os.path.join(fl_output_dir, 'dashboard.html')}")
+            print(f"   - Accuracy Animation: {acc_gif}")
+            print(f"   - Participation Animation: {part_gif}")
+            
+        except Exception as viz_error:
+            print(f"⚠️  Visualization generation failed: {viz_error}")
+            import traceback
+            traceback.print_exc()
+        
+    except Exception as e:
+        print(f"⚠️ Warning: Failed to save FL results: {e}")
+    
     print("\n🎉 FLOMPS Complete Workflow Finished!")
     print("✅ SatSim → Algorithm → FL pipeline completed successfully")
     

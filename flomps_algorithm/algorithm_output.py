@@ -50,15 +50,14 @@ class AlgorithmOutput(Output):
         self.flam_output = None
 
         if path_manager:
-            # use path manager
+            # use path manager - both outputs go to algorithm_output_dir
             self.output_path = str(path_manager.algorithm_output_dir)
-            self.csv_output_path = str(path_manager.synth_flams_dir)
+            self.csv_output_path = str(path_manager.algorithm_output_dir)
         else:
-            # use backup path
+            # use backup path - both outputs go to algorithm output directory
             script_dir = os.path.dirname(os.path.abspath(__file__))
             self.output_path = os.path.join(script_dir, 'output')
-            project_root = os.path.dirname(script_dir)
-            self.csv_output_path = os.path.join(project_root, "synth_FLAMs")
+            self.csv_output_path = os.path.join(script_dir, 'output')
 
             # ensure directories exist
             os.makedirs(self.output_path, exist_ok=True)

@@ -28,7 +28,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from federated_learning.fl_core import FederatedLearning
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from model import *
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from interfaces.output import Output
 
@@ -42,7 +41,7 @@ class Config:
     # Constructor, accepts core module
     def __init__(self, federated_learning: FederatedLearning):
         self.fl_core = federated_learning
-        self.model = Model()
+        # self.model = Model()  # Removed: model_simple.py is no longer needed
         self.options = None
         self.model_options = None
 
@@ -74,14 +73,13 @@ class Config:
         print ("FL setters called")
 
     def set_federated_learning_model(self) -> None:
-        # NOTE: This uses legacy model.py (TensorFlow) for configuration only
-        # The actual PyTorch models are created in fl_core.py using model_evaluation.py
-        self.model.set_model_type(self.options["model_type"])
-        self.model.set_data_set(self.options["data_set"])
+        # NOTE: Model configuration is now handled directly in fl_core.py
+        # The actual PyTorch models are created in initialize_model() using model_evaluation.py
+        # No need for legacy model configuration object
         
-        # Set model directly (model selection will be handled in initialize_model if enabled)
-        # This is mainly for configuration - actual model creation happens in PyTorch
-        self.fl_core.set_model(self.model)
+        # Set model type and dataset directly on fl_core for configuration
+        self.fl_core.model_type = self.options["model_type"]
+        self.fl_core.data_set = self.options["data_set"]
         
         # Store available options for interactive selection
         if hasattr(self.fl_core, 'available_models'):

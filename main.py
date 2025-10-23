@@ -93,8 +93,11 @@ def separate_args(parser, args_for_config):
         keys = [a.dest for a in group._group_actions]
         return keys
     
-    options_arg_keys = get_group_arg_keys(parser, "options")
-    positional_arg_keys = get_group_arg_keys(parser, "positional arguments")
+    # Get all argument keys except positional arguments
+    all_keys = [a.dest for a in parser._actions if a.dest != 'help']
+    positional_keys = [a.dest for a in parser._actions if a.dest in ['input_file']]
+    options_arg_keys = [k for k in all_keys if k not in positional_keys]
+    positional_arg_keys = positional_keys
 
     options_args = {k: v for k, v in args_for_config.items() if k in options_arg_keys}
     module_args = {k: v for k, v in args_for_config.items() if k not in options_arg_keys and k not in positional_arg_keys}
@@ -177,7 +180,15 @@ def update_options_with_args(parser, args_for_config, options):
         options_to_update = {k: v for k, v in args_for_config.items() if k in group_arg_keys}
 
         # Apply new settings to JSON options of relevant module
-        options[group.title.value].update(options_to_update)
+        # Map group titles to option keys
+        group_mapping = {
+            "ModuleKey.SAT_SIM": "sat_sim",
+            "ModuleKey.ALGORITHM": "algorithm", 
+            "ModuleKey.FL": "federated_learning"
+        }
+        
+        if group.title in group_mapping:
+            options[group_mapping[group.title]].update(options_to_update)
 
     return options
 

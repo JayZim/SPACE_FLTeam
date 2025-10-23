@@ -27,7 +27,7 @@ ModelRegistry in federated_learning/model_evaluation.py.
 Usage: 
 This class is used by fl_config.py for configuration purposes only.
 """
-import tensorflow as tf
+# import tensorflow as tf  # Removed for compatibility
 import numpy as np
 
 from typing import Tuple

@@ -31,24 +31,24 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Dataset specifications - 统一使用 64x64 尺寸
+# Dataset specifications - unified 64x64 size
 DATASET_SPECS = {
     "MNIST": {
-        "input_size": (64, 64, 1),  # 统一调整为 64x64
+        "input_size": (64, 64, 1),  # unified adjustment to 64x64
         "original_size": (28, 28, 1),
         "num_classes": 10,
         "normalization": (0.5,),
         "augmentation": False
     },
     "CIFAR10": {
-        "input_size": (64, 64, 3),  # 统一调整为 64x64
+        "input_size": (64, 64, 3),  # unified adjustment to 64x64
         "original_size": (32, 32, 3),
         "num_classes": 10,
         "normalization": (0.5, 0.5, 0.5),
         "augmentation": True
     },
     "EuroSAT": {
-        "input_size": (64, 64, 3),  # 保持 64x64
+        "input_size": (64, 64, 3),  # maintain 64x64
         "original_size": (64, 64, 3),
         "num_classes": 10,
         "normalization": (0.3443, 0.3804, 0.4086),
@@ -102,12 +102,12 @@ class DatasetAdapter:
             return self.load_dataset("MNIST")
     
     def get_transform(self, name: str) -> transforms.Compose:
-        """Get appropriate transforms for dataset - 统一调整为 64x64"""
+        """Get appropriate transforms for dataset - unified adjustment to 64x64"""
         spec = DATASET_SPECS[name]
         
         transform_list = []
         
-        # 统一调整所有数据集为 64x64
+        # unified adjustment of all datasets to 64x64
         target_size = spec["input_size"][:2]  # (64, 64)
         transform_list.append(transforms.Resize(target_size))
         
@@ -155,12 +155,14 @@ class DatasetAdapter:
     
     def _create_heterogeneous_split(self, dataset, num_clients: int) -> List[DataLoader]:
         """Create heterogeneous client splits with class imbalance"""
-        # Convert to list for manipulation
-        data_list = list(dataset)
+        # Get indices without converting to list to save memory
+        total_samples = len(dataset)
+        indices = list(range(total_samples))
         
-        # Group by class
+        # Group by class using indices
         class_data = {}
-        for i, (_, target) in enumerate(data_list):
+        for i in indices:
+            _, target = dataset[i]
             label = target.item() if isinstance(target, torch.Tensor) else target
             if label not in class_data:
                 class_data[label] = []
@@ -311,7 +313,8 @@ class ModelAdapter:
                             layer_type = target_name.split('.')[-2] if '.' in target_name else target_name
                             for source_name, source_param in source_backbone.items():
                                 if layer_type in source_name and target_param.shape == source_param.shape:
-                                    if target_name not in [k for k, v in target_state.items() if torch.equal(v, source_state.get(k, torch.zeros_like(v)))]:
+                                    # Simplified check - just verify the layer hasn't been transferred yet
+                                    if target_name not in target_state:
                                         target_state[target_name] = source_param
                                         transferred_layers += 1
                                         transferred_params += target_param.numel()
@@ -368,13 +371,13 @@ class ModelAdapter:
         return model
     
     def _create_default_model(self, dataset_name: str) -> nn.Module:
-        """Create a default model as fallback - 统一使用 64x64 RGB 输入"""
+        """Create a default model as fallback - unified 64x64 RGB input"""
         spec = DATASET_SPECS[dataset_name]
         
         class DefaultModel(nn.Module):
             def __init__(self, num_classes):
                 super(DefaultModel, self).__init__()
-                # 统一使用 3 通道 64x64 输入
+                # unified 3-channel 64x64 input
                 self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
                 self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
                 self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)

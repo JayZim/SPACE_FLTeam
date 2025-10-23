@@ -1,0 +1,199 @@
+{
+  "timestamp": "2025-10-24T07:19:40.501787",
+  "test_suite": "All TLE Configuration Test",
+  "total_tests": 7,
+  "successful_tests": 7,
+  "failed_tests": 0,
+  "success_rate": 100.0,
+  "results": [
+    {
+      "test_name": "NovaSar Satellite Constellation (1 satellite)",
+      "tle_file": "TLEs/NovaSar.tle",
+      "start_time": "2025-10-24T07:19:37.460643",
+      "steps": {
+        "sat_sim": {
+          "status": "success",
+          "duration": 0.19330406188964844,
+          "satellites": 1,
+          "timesteps": 60
+        },
+        "algorithm": {
+          "status": "success",
+          "duration": 0.37149882316589355,
+          "output_files": "flomps_algorithm/output/"
+        },
+        "federated_learning": {
+          "status": "success",
+          "duration": 2.2325799465179443,
+          "rounds": 3,
+          "clients": 4
+        }
+      },
+      "end_time": "2025-10-24T07:19:40.258080",
+      "total_duration": 2.7973828315734863,
+      "overall_status": "success"
+    },
+    {
+      "test_name": "Single Satellite Configuration (1 satellite)",
+      "tle_file": "TLEs/SatCount1.tle",
+      "start_time": "2025-10-24T07:19:40.258175",
+      "steps": {
+        "sat_sim": {
+          "status": "success",
+          "duration": 0.007989883422851562,
+          "satellites": 1,
+          "timesteps": 60
+        },
+        "algorithm": {
+          "status": "success",
+          "duration": 0.004152059555053711,
+          "output_files": "flomps_algorithm/output/"
+        },
+        "federated_learning": {
+          "status": "success",
+          "duration": 5.984306335449219e-05,
+          "rounds": 3,
+          "clients": 4
+        }
+      },
+      "end_time": "2025-10-24T07:19:40.270411",
+      "total_duration": 0.012201786041259766,
+      "overall_status": "success"
+    },
+    {
+      "test_name": "Three Satellite Configuration (3 satellites)",
+      "tle_file": "TLEs/SatCount3.tle",
+      "start_time": "2025-10-24T07:19:40.271110",
+      "steps": {
+        "sat_sim": {
+          "status": "success",
+          "duration": 0.011170148849487305,
+          "satellites": 3,
+          "timesteps": 60
+        },
+        "algorithm": {
+          "status": "success",
+          "duration": 0.01064920425415039,
+          "output_files": "flomps_algorithm/output/"
+        },
+        "federated_learning": {
+          "status": "success",
+          "duration": 5.7220458984375e-05,
+          "rounds": 3,
+          "clients": 4
+        }
+      },
+      "end_time": "2025-10-24T07:19:40.293029",
+      "total_duration": 0.02187657356262207,
+      "overall_status": "success"
+    },
+    {
+      "test_name": "Four Satellite Configuration (4 satellites)",
+      "tle_file": "TLEs/SatCount4.tle",
+      "start_time": "2025-10-24T07:19:40.293969",
+      "steps": {
+        "sat_sim": {
+          "status": "success",
+          "duration": 0.012270689010620117,
+          "satellites": 4,
+          "timesteps": 60
+        },
+        "algorithm": {
+          "status": "success",
+          "duration": 0.002830028533935547,
+          "output_files": "flomps_algorithm/output/"
+        },
+        "federated_learning": {
+          "status": "success",
+          "duration": 6.198883056640625e-05,
+          "rounds": 3,
+          "clients": 4
+        }
+      },
+      "end_time": "2025-10-24T07:19:40.309168",
+      "total_duration": 0.01516270637512207,
+      "overall_status": "success"
+    },
+    {
+      "test_name": "Eight Satellite Configuration (8 satellites)",
+      "tle_file": "TLEs/SatCount8.tle",
+      "start_time": "2025-10-24T07:19:40.309239",
+      "steps": {
+        "sat_sim": {
+          "status": "success",
+          "duration": 0.018406152725219727,
+          "satellites": 8,
+          "timesteps": 60
+        },
+        "algorithm": {
+          "status": "success",
+          "duration": 0.00524592399597168,
+          "output_files": "flomps_algorithm/output/"
+        },
+        "federated_learning": {
+          "status": "success",
+          "duration": 7.414817810058594e-05,
+          "rounds": 3,
+          "clients": 4
+        }
+      },
+      "end_time": "2025-10-24T07:19:40.333011",
+      "total_duration": 0.023726224899291992,
+      "overall_status": "success"
+    },
+    {
+      "test_name": "Forty Satellite Configuration (40 satellites)",
+      "tle_file": "TLEs/SatCount40.tle",
+      "start_time": "2025-10-24T07:19:40.333509",
+      "steps": {
+        "sat_sim": {
+          "status": "success",
+          "duration": 0.12565302848815918,
+          "satellites": 40,
+          "timesteps": 60
+        },
+        "algorithm": {
+          "status": "success",
+          "duration": 0.029195070266723633,
+          "output_files": "flomps_algorithm/output/"
+        },
+        "federated_learning": {
+          "status": "success",
+          "duration": 6.890296936035156e-05,
+          "rounds": 3,
+          "clients": 4
+        }
+      },
+      "end_time": "2025-10-24T07:19:40.488477",
+      "total_duration": 0.15491700172424316,
+      "overall_status": "success"
+    },
+    {
+      "test_name": "Walker Satellite Constellation (1 satellite)",
+      "tle_file": "TLEs/Walker.tle",
+      "start_time": "2025-10-24T07:19:40.488605",
+      "steps": {
+        "sat_sim": {
+          "status": "success",
+          "duration": 0.007807016372680664,
+          "satellites": 1,
+          "timesteps": 60
+        },
+        "algorithm": {
+          "status": "success",
+          "duration": 0.0045278072357177734,
+          "output_files": "flomps_algorithm/output/"
+        },
+        "federated_learning": {
+          "status": "success",
+          "duration": 5.507469177246094e-05,
+          "rounds": 3,
+          "clients": 4
+        }
+      },
+      "end_time": "2025-10-24T07:19:40.501027",
+      "total_duration": 0.012389898300170898,
+      "overall_status": "success"
+    }
+  ]
+}

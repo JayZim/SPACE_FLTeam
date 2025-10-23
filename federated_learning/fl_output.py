@@ -76,13 +76,16 @@ class FLOutput(Output):
 
         # Initialize test dataset if not provided
         if test_dataset is None:
+            # Use MNIST as default dataset for compatibility
             transform = transforms.Compose([
                 transforms.ToTensor(),
-                # If you normalized in training, use the same stats here.
-                # transforms.Normalize(mean=[0.3443, 0.3804, 0.4086], std=[0.1814, 0.1535, 0.1311])
+                transforms.Normalize((0.5,), (0.5,)),
+                transforms.Lambda(lambda x: x.repeat(3, 1, 1))  # Convert 1-channel to 3-channel
             ])
-            self.test_dataset = datasets.EuroSAT('~/.pytorch/EuroSAT/', download=True,
-                                                transform=transform)
+            self.test_dataset = datasets.MNIST('~/.pytorch/MNIST_data/',
+                                              download=True,
+                                              train=False,
+                                              transform=transform)
             self.test_loader = DataLoader(self.test_dataset,
                                         batch_size=self.batch_size,
                                         shuffle=False)
@@ -407,6 +410,29 @@ class FLOutput(Output):
 
         participation_log = metrics["additional_metrics"]["participation_log"]
         num_timesteps = len(participation_log)
+        
+        # Check if we have any data to animate
+        if not participation_log or len(participation_log) == 0:
+            print("Warning: No participation data available for animation. Creating static plot instead.")
+            fig, ax = plt.subplots(figsize=(10, 8))
+            ax.text(0.5, 0.5, "No participation data available", transform=ax.transAxes, fontsize=16, ha="center")
+            ax.set_title("Client Participation Animation")
+            if save_path:
+                plt.savefig(save_path.replace('.gif', '.png'))
+                print(f"Static plot saved to {save_path.replace('.gif', '.png')}")
+            return
+        
+        # Ensure we have at least 2 data points for animation
+        if len(participation_log) < 2:
+            print("Warning: Insufficient participation data for animation. Creating static plot instead.")
+            fig, ax = plt.subplots(figsize=(10, 8))
+            ax.text(0.5, 0.5, "Insufficient data for animation", transform=ax.transAxes, fontsize=16, ha="center")
+            ax.set_title("Client Participation Animation")
+            if save_path:
+                plt.savefig(save_path.replace('.gif', '.png'))
+                print(f"Static plot saved to {save_path.replace('.gif', '.png')}")
+            return
+        
         num_clients = max(
             max([entry["aggregation_server"] if entry["aggregation_server"] is not None else 0] +
                 [entry["redistribution_server"] if entry["redistribution_server"] is not None else 0] +
@@ -604,10 +630,10 @@ class FLOutput(Output):
             return circles + arrows + [rounds_text, phase_text, accuracy_text, round_acc_text]
 
         ani = animation.FuncAnimation(fig, update, frames=num_timesteps,
-                                      init_func=init, blit=False, repeat=False)
+                                      init_func=init, blit=False, repeat=True)
 
         if save_path:
-            ani.save(save_path, writer='pillow', fps=1)
+            ani.save(save_path, writer='pillow', fps=0.8)  # 1.25 seconds per frame
             print(f"Animation saved to {save_path}")
         else:
             plt.show()
@@ -635,6 +661,30 @@ class FLOutput(Output):
                 processed_accuracies.append(acc)
                 last_acc = acc
 
+        # Check if we have any data to animate
+        if not processed_accuracies or len(processed_accuracies) == 0:
+            print("Warning: No accuracy data available for animation. Creating static plot instead.")
+            fig, ax = plt.subplots(figsize=(10, 8))
+            ax.text(0.5, 0.5, "No accuracy data available", transform=ax.transAxes, fontsize=16, ha="center")
+            ax.set_title("Federated Learning Accuracy Progression")
+            if save_path:
+                plt.savefig(save_path.replace('.gif', '.png'))
+                print(f"Static plot saved to {save_path.replace('.gif', '.png')}")
+            return
+        
+        # Ensure we have at least 2 data points for animation
+        if len(processed_accuracies) < 2:
+            print("Warning: Insufficient data points for animation. Creating static plot instead.")
+            fig, ax = plt.subplots(figsize=(10, 8))
+            ax.bar(timesteps, processed_accuracies, color="green", width=0.8)
+            ax.set_xlabel("Timestep")
+            ax.set_ylabel("Accuracy")
+            ax.set_title("Federated Learning Accuracy Progression")
+            if save_path:
+                plt.savefig(save_path.replace('.gif', '.png'))
+                print(f"Static plot saved to {save_path.replace('.gif', '.png')}")
+            return
+
         fig, ax = plt.subplots(figsize=(10, 8))
         ax.set_xlim(0, len(processed_accuracies) + 1)
         ax.set_ylim(0.00, 1.05)
@@ -650,17 +700,20 @@ class FLOutput(Output):
             ax.set_ylabel("Accuracy")
             ax.set_title("Federated Learning Accuracy Progression")
             ax.bar(timesteps[:frame+1], processed_accuracies[:frame+1], color="green", width=0.8)
-            acc = round_accuracies[frame]
-            if acc == 0 or acc is None:
-                accuracy_text = ax.text(0.5, 0.95, f"Timestep: {frame+1} | Training Skipped", transform=ax.transAxes, fontsize=14, ha="center")
+            if frame < len(round_accuracies):
+                acc = round_accuracies[frame]
+                if acc == 0 or acc is None:
+                    accuracy_text = ax.text(0.5, 0.95, f"Timestep: {frame+1} | Training Skipped", transform=ax.transAxes, fontsize=14, ha="center")
+                else:
+                    accuracy_text = ax.text(0.5, 0.95, f"Timestep: {frame+1} | Accuracy: {acc:.2%}", transform=ax.transAxes, fontsize=14, ha="center")
             else:
-                accuracy_text = ax.text(0.5, 0.95, f"Timestep: {frame+1} | Accuracy: {acc:.2%}", transform=ax.transAxes, fontsize=14, ha="center")
+                accuracy_text = ax.text(0.5, 0.95, f"Timestep: {frame+1} | No Data", transform=ax.transAxes, fontsize=14, ha="center")
             return [accuracy_text]
 
-        ani = animation.FuncAnimation(fig, update, frames=len(processed_accuracies), blit=False, repeat=False)
+        ani = animation.FuncAnimation(fig, update, frames=len(processed_accuracies), blit=False, repeat=True)
 
         if save_path:
-            ani.save(save_path, writer='pillow', fps=2)
+            ani.save(save_path, writer='pillow', fps=1.2)  # 0.83 seconds per frame
             print(f"Animation saved to {save_path}")
         else:
             plt.show()

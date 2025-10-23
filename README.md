@@ -15,7 +15,14 @@ This project requires the following Core Software Libraries:
 ## Project I54 Overview
 **What does it do?**
 
-The S.P.A.C.E project is a space simulation suite intending to validate a concept designed by the project's client – Swinburne's Space Instrumentation Engineering Group (SIEG). This concept aims to address current Earth Observation limitations, through the implementation of decentralised learning of satellite swarms, with the S.P.A.C.E project providing the framework for a virtual suite to which the client can use to further progress the initial FLOMPS (Federated Learning Over Moving Parameter Server) concept. 
+The S.P.A.C.E project is a space simulation suite intending to validate a concept designed by the project's client – Swinburne's Space Instrumentation Engineering Group (SIEG). This concept aims to address current Earth Observation limitations, through the implementation of decentralised learning of satellite swarms, with the S.P.A.C.E project providing the framework for a virtual suite to which the client can use to further progress the initial FLOMPS (Federated Learning Over Moving Parameter Server) concept.
+
+### 🎬 New Features
+- **GIF Animation Generation**: Automatic generation of animated visualizations
+  - Accuracy progress animations showing federated learning convergence
+  - Client participation animations visualizing satellite communication patterns
+- **Interactive Dashboards**: Real-time monitoring and visualization tools
+- **Complete Workflow**: End-to-end simulation from TLE files to animated results 
 
 ## 📚 Documentation
 
@@ -27,8 +34,15 @@ The S.P.A.C.E project is a space simulation suite intending to validate a concep
 ### Installation & Testing
 To install the required dependencies, run the following command:
 ```bash
-# Test system requirements
-python test_complete_integration.py
+# Install dependencies
+pip install -r requirements.txt
+
+# Test complete workflow with GIF animations
+python3 main.py flomps TLEs/SatCount8.tle --timesteps 15 --model-type SimpleCNN --data-set MNIST --num-rounds 3 --num-clients 4
+
+# Test GIF animation generation
+cd P_45/test_scripts
+python3 test_gif_animation.py
 
 # Generate FLAM CSV file
 python generate_flam_csv.py

@@ -12,6 +12,7 @@ Changelog:
 Usage: Access a module and its I/O interfaces by calling the relevant create function
 
 """
+import os
 from enum import Enum
 from typing import NamedTuple
 
@@ -26,7 +27,7 @@ from flomps_algorithm.algorithm_handler import AlgorithmHandler
 from flomps_algorithm.algorithm_output import AlgorithmOutput
 
 from federated_learning.fl_core import FederatedLearning
-from federated_learning.fl_config import FLConfig
+from federated_learning.fl_config import Config as FLConfig
 from federated_learning.fl_handler import FLHandler
 from federated_learning.fl_output import FLOutput
 
@@ -91,10 +92,24 @@ def create_algorithm_module() -> AlgorithmModule:
     return AlgorithmModule(algorithm_config, algorithm_handler, algorithm.output)
 
 def create_fl_module() -> FLModule:
-    fl = FederatedLearning()
+    fl = FederatedLearning(enable_model_evaluation=False, enable_adaptation=False)
     fl_config = FLConfig(fl)
     fl_handler = FLHandler(fl)
-    fl_output = FLOutput()
+    
+    # Create a default test dataset for FLOutput
+    from torchvision import datasets, transforms
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize((0.5,), (0.5,)),
+        transforms.Lambda(lambda x: x.repeat(3, 1, 1))  # 28x28x3 = 2352
+    ])
+    test_dataset = datasets.MNIST(
+        root=os.path.join(os.path.dirname(__file__), 'federated_learning', 'data', 'MNIST'),
+        train=False,
+        download=True,
+        transform=transform
+    )
+    fl_output = FLOutput(test_dataset=test_dataset)
 
     return FLModule(fl_config, fl_handler, fl_output)
 

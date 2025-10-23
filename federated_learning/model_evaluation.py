@@ -74,17 +74,17 @@ class ModelRegistry:
     
     def _register_default_models(self):
         """Register default models available in the system"""
-        # Simple CNN - 统一使用 64x64 RGB 输入
+        # Simple CNN - adaptive input size
         self.register_model(
             name="SimpleCNN",
             model_class=self._create_simple_cnn,
-            parameters={"input_shape": (64, 64, 3), "num_classes": 10},
-            description="Simple Convolutional Neural Network - 64x64 RGB",
+            parameters={"input_shape": (28, 28, 3), "num_classes": 10},
+            description="Simple Convolutional Neural Network - adaptive input size (28x28 or 64x64)",
             category="CNN",
             complexity="Low",
             compatible_datasets=["MNIST", "CIFAR10", "EuroSAT"],
             supports_transfer=True,
-            input_spec={"shape": (64, 64, 3), "channels": 3},
+            input_spec={"shape": (28, 28, 3), "channels": 3},
             output_spec={"num_classes": 10},
             expected_accuracy={"MNIST": (0.95, 0.99), "CIFAR10": (0.70, 0.80), "EuroSAT": (0.75, 0.85)}
         )
@@ -104,12 +104,12 @@ class ModelRegistry:
             expected_accuracy={"MNIST": (0.97, 0.99), "CIFAR10": (0.75, 0.85), "EuroSAT": (0.80, 0.90)}
         )
         
-        # Custom CNN - 统一使用 64x64 RGB 输入
+        # Custom CNN - adaptive input channels
         self.register_model(
             name="CustomCNN",
             model_class=self._create_custom_cnn,
             parameters={"input_shape": (64, 64, 3), "num_classes": 10, "filters": [32, 64, 128]},
-            description="Custom CNN with configurable filters - 64x64 RGB",
+            description="Custom CNN with configurable filters - adaptive input",
             category="CNN",
             complexity="Medium",
             compatible_datasets=["MNIST", "CIFAR10", "EuroSAT"],
@@ -184,25 +184,48 @@ class ModelRegistry:
         return [name for name, info in self.models.items() if info.category == category]
     
     def _create_simple_cnn(self, **kwargs):
-        """Create Simple CNN model - 统一使用 64x64 RGB 输入"""
+        """Create Simple CNN model - adaptive input size"""
         class SimpleCNN(nn.Module):
-            def __init__(self, input_shape=(64, 64, 3), num_classes=10):
+            def __init__(self, input_shape=(28, 28, 3), num_classes=10):
                 super(SimpleCNN, self).__init__()
-                # 统一使用 3 通道 64x64 输入
+                # Adaptive input size - works with both 28x28 and 64x64
                 self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
                 self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
                 self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
                 self.pool = nn.MaxPool2d(2, 2)
-                # 64x64 -> 32x32 -> 16x16 -> 8x8 (3 pooling layers)
-                self.fc1 = nn.Linear(128 * 8 * 8, 256)
-                self.fc2 = nn.Linear(256, num_classes)
                 self.dropout = nn.Dropout(0.5)
                 
+                # Calculate flattened size dynamically
+                self._calculate_fc_size(input_shape)
+                
+                self.fc1 = nn.Linear(self.fc_input_size, 256)
+                self.fc2 = nn.Linear(256, num_classes)
+                
+            def _calculate_fc_size(self, input_shape):
+                """Calculate the size of the first fully connected layer"""
+                # Simulate forward pass to get the size
+                dummy_input = torch.randn(1, 3, input_shape[0], input_shape[1])
+                with torch.no_grad():
+                    x = self.pool(torch.relu(self.conv1(dummy_input)))
+                    x = self.pool(torch.relu(self.conv2(x)))
+                    x = self.pool(torch.relu(self.conv3(x)))
+                    self.fc_input_size = x.view(-1).size(0)
+                
             def forward(self, x):
-                x = self.pool(torch.relu(self.conv1(x)))  # 64 -> 32
-                x = self.pool(torch.relu(self.conv2(x)))  # 32 -> 16
-                x = self.pool(torch.relu(self.conv3(x)))  # 16 -> 8
-                x = x.view(-1, 128 * 8 * 8)
+                # Ensure input is 3-channel
+                if x.size(1) == 1:  # If grayscale (1 channel)
+                    x = x.repeat(1, 3, 1, 1)  # Convert to 3 channels
+                elif x.size(1) != 3:  # If not 3 channels
+                    x = x.repeat(1, 3, 1, 1)  # Convert to 3 channels
+                
+                # Resize to 28x28 if needed (for MNIST compatibility)
+                if x.size(2) != 28 or x.size(3) != 28:
+                    x = torch.nn.functional.interpolate(x, size=(28, 28), mode='bilinear', align_corners=False)
+                
+                x = self.pool(torch.relu(self.conv1(x)))
+                x = self.pool(torch.relu(self.conv2(x)))
+                x = self.pool(torch.relu(self.conv3(x)))
+                x = x.view(-1, self.fc_input_size)
                 x = torch.relu(self.fc1(x))
                 x = self.dropout(x)
                 x = self.fc2(x)
@@ -217,7 +240,8 @@ class ModelRegistry:
         class ResNet50MNIST(nn.Module):
             def __init__(self, input_shape=(32, 32, 3), num_classes=10):
                 super(ResNet50MNIST, self).__init__()
-                self.resnet = models.resnet50(pretrained=True)
+                # Use pretrained=False to avoid downloading weights during initialization
+                self.resnet = models.resnet50(pretrained=False)
                 # Modify first layer for 3-channel input
                 self.resnet.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
                 # Modify last layer for number of classes
@@ -229,27 +253,37 @@ class ModelRegistry:
         return ResNet50MNIST(**kwargs)
     
     def _create_custom_cnn(self, **kwargs):
-        """Create Custom CNN model"""
+        """Create Custom CNN model with adaptive input channels"""
         class CustomCNN(nn.Module):
-            def __init__(self, input_shape=(28, 28, 1), num_classes=10, filters=[32, 64, 128]):
+            def __init__(self, input_shape=(64, 64, 3), num_classes=10, filters=[32, 64, 128]):
                 super(CustomCNN, self).__init__()
                 self.filters = filters
                 self.conv_layers = nn.ModuleList()
                 self.bn_layers = nn.ModuleList()
                 
-                # Create convolutional layers
-                in_channels = input_shape[2]
+                # Create convolutional layers - always use 3 channels for RGB input
+                in_channels = 3  # Always 3 channels for RGB
                 for i, out_channels in enumerate(filters):
                     self.conv_layers.append(nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1))
                     self.bn_layers.append(nn.BatchNorm2d(out_channels))
                     in_channels = out_channels
                 
-                # Calculate flattened size
-                self.flattened_size = filters[-1] * (input_shape[0] // (2 ** len(filters))) ** 2
+                # Calculate flattened size based on 64x64 input
+                self.flattened_size = filters[-1] * (64 // (2 ** len(filters))) ** 2
                 self.fc = nn.Linear(self.flattened_size, num_classes)
                 self.dropout = nn.Dropout(0.3)
                 
             def forward(self, x):
+                # Ensure input is 3-channel RGB
+                if x.size(1) == 1:  # If grayscale (1 channel)
+                    x = x.repeat(1, 3, 1, 1)  # Convert to 3 channels
+                elif x.size(1) != 3:  # If not 3 channels
+                    x = x.repeat(1, 3, 1, 1)  # Convert to 3 channels
+                
+                # Resize to 64x64 if needed
+                if x.size(2) != 64 or x.size(3) != 64:
+                    x = torch.nn.functional.interpolate(x, size=(64, 64), mode='bilinear', align_corners=False)
+                
                 for conv, bn in zip(self.conv_layers, self.bn_layers):
                     x = torch.relu(bn(conv(x)))
                     x = torch.max_pool2d(x, 2)
@@ -267,8 +301,8 @@ class ModelRegistry:
         class EfficientNetB0EuroSAT(nn.Module):
             def __init__(self, input_shape=(64, 64, 3), num_classes=10):
                 super(EfficientNetB0EuroSAT, self).__init__()
-                # Load pre-trained EfficientNet-B0
-                self.efficientnet = models.efficientnet_b0(pretrained=True)
+                # Load EfficientNet-B0 without pretrained weights to avoid download
+                self.efficientnet = models.efficientnet_b0(pretrained=False)
                 
                 # Modify the classifier for our number of classes
                 self.efficientnet.classifier = nn.Sequential(

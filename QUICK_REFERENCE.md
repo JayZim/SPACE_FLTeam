@@ -9,6 +9,7 @@
 - Calculate inter-satellite communication links
 - Run federated learning algorithms
 - Generate training schedule files
+- **🎬 Create animated visualizations**
 
 ---
 
@@ -21,6 +22,8 @@ SPACE_FLTeam/
 ├── ⚙️ options.json         # Configuration file - set parameters
 ├── 📡 TLEs/               # Satellite data - choose satellite count
 ├── 📈 synth_FLAMs/        # Output results - CSV files here
+├── 🎬 federated_learning/results_from_output/  # GIF animations here
+├── 📁 P_45/               # Test suite and documentation
 └── 🧪 test_*.py          # Test files - verify functionality
 ```
 
@@ -29,8 +32,8 @@ SPACE_FLTeam/
 ## 🔄 3-Step Data Flow
 
 ```
-1️⃣ TLE Orbital Data  →  2️⃣ Satellite Simulation  →  3️⃣ Federated Learning Algorithm  →  📄 CSV Results
-   (Satellite positions)    (Communication links)       (Training schedule)             (Timetable)
+1️⃣ TLE Orbital Data  →  2️⃣ Satellite Simulation  →  3️⃣ Federated Learning Algorithm  →  📄 CSV Results + 🎬 GIF Animations
+   (Satellite positions)    (Communication links)       (Training schedule)             (Timetable + Visualizations)
 ```
 
 ---
@@ -47,9 +50,14 @@ python test_complete_integration.py
 python generate_flam_csv.py
 ```
 
-### Run complete simulation
+### Run complete simulation with GIF animations 🎬
 ```bash
-python main.py flomps --start-time "2024-09-12 12:00:00" --end-time "2024-09-12 13:40:00"
+# Basic simulation with animations
+python3 main.py flomps TLEs/SatCount8.tle --timesteps 15 --model-type SimpleCNN --data-set MNIST --num-rounds 3 --num-clients 4
+
+# Test GIF animation generation
+cd P_45/test_scripts
+python3 test_gif_animation.py
 ```
 
 ### Launch GUI interface
@@ -61,14 +69,25 @@ python SPACEGUI.py
 
 ## 📊 Understanding Output Files
 
-### CSV File Location
+### Output File Locations
+
+#### CSV Files (FLAM Data)
 ```
-synth_FLAMs/flam_4n_100t_flomps_2025-06-04_20-53-28.csv
+flomps_algorithm/output/flam_8n_15t_flomps_3phase_2025-10-24_02-03-13.csv
 ```
-- `4n` = 4 satellites
-- `100t` = 100 timesteps
+- `8n` = 8 satellites
+- `15t` = 15 timesteps
 - `flomps` = using FLOMPS algorithm
-- `2025-06-04_20-53-28` = generation time
+- `2025-10-24_02-03-13` = generation time
+
+#### GIF Animation Files 🎬
+```
+federated_learning/results_from_output/20251024_020321/
+├── accuracy_progress.gif      # Accuracy progression animation
+├── client_participation.gif   # Client participation animation
+├── dashboard.html             # Interactive dashboard
+└── fl_metrics_*.json          # Detailed metrics
+```
 
 ### CSV Content Format
 ```csv

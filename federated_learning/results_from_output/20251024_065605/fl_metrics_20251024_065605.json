@@ -1,0 +1,656 @@
+{
+  "accuracy": 0.95,
+  "loss": 0.5,
+  "processing_time": 33.50199294090271,
+  "model_type": "SimpleCNN",
+  "data_set": "MNIST",
+  "num_rounds": 5,
+  "num_clients": 6,
+  "round_times": {
+    "round_1": 30.0,
+    "round_2": 35.0,
+    "round_3": 40.0,
+    "round_4": 45.0,
+    "round_5": 50.0
+  },
+  "round_accuracies": [
+    0.6,
+    0.66,
+    0.72,
+    0.75,
+    0.81,
+    0.87,
+    0.9,
+    0.95,
+    0.95,
+    0.95,
+    0.95,
+    0.95,
+    0.95,
+    0.95,
+    0.95
+  ],
+  "participation_log": [
+    {
+      "timestep": 1,
+      "round": 1,
+      "phase": "TRANSMITTING",
+      "aggregation_server": 3,
+      "redistribution_server": 3,
+      "in_range_clients": [
+        1,
+        2,
+        5,
+        6,
+        7
+      ],
+      "out_of_range_clients": [
+        0,
+        3,
+        4
+      ],
+      "accuracy": 0.6
+    },
+    {
+      "timestep": 2,
+      "round": 1,
+      "phase": "REDISTRIBUTION",
+      "aggregation_server": 6,
+      "redistribution_server": 6,
+      "in_range_clients": [
+        1,
+        2,
+        3,
+        4,
+        7
+      ],
+      "out_of_range_clients": [
+        0,
+        5,
+        6
+      ],
+      "accuracy": 0.66
+    },
+    {
+      "timestep": 3,
+      "round": 1,
+      "phase": "CHECK",
+      "aggregation_server": 3,
+      "redistribution_server": 3,
+      "in_range_clients": [
+        1,
+        2,
+        5,
+        6,
+        7
+      ],
+      "out_of_range_clients": [
+        0,
+        3,
+        4
+      ],
+      "accuracy": 0.72
+    },
+    {
+      "timestep": 4,
+      "round": 2,
+      "phase": "TRANSMITTING",
+      "aggregation_server": 6,
+      "redistribution_server": 6,
+      "in_range_clients": [
+        1,
+        2,
+        3,
+        4,
+        7
+      ],
+      "out_of_range_clients": [
+        0,
+        5,
+        6
+      ],
+      "accuracy": 0.75
+    },
+    {
+      "timestep": 5,
+      "round": 2,
+      "phase": "REDISTRIBUTION",
+      "aggregation_server": 3,
+      "redistribution_server": 3,
+      "in_range_clients": [
+        1,
+        2,
+        5,
+        6,
+        7
+      ],
+      "out_of_range_clients": [
+        0,
+        3,
+        4
+      ],
+      "accuracy": 0.81
+    },
+    {
+      "timestep": 6,
+      "round": 2,
+      "phase": "CHECK",
+      "aggregation_server": 6,
+      "redistribution_server": 6,
+      "in_range_clients": [
+        1,
+        2,
+        3,
+        4,
+        7
+      ],
+      "out_of_range_clients": [
+        0,
+        5,
+        6
+      ],
+      "accuracy": 0.87
+    },
+    {
+      "timestep": 7,
+      "round": 3,
+      "phase": "TRANSMITTING",
+      "aggregation_server": 3,
+      "redistribution_server": 3,
+      "in_range_clients": [
+        1,
+        2,
+        5,
+        6,
+        7
+      ],
+      "out_of_range_clients": [
+        0,
+        3,
+        4
+      ],
+      "accuracy": 0.9
+    },
+    {
+      "timestep": 8,
+      "round": 3,
+      "phase": "REDISTRIBUTION",
+      "aggregation_server": 6,
+      "redistribution_server": 6,
+      "in_range_clients": [
+        1,
+        2,
+        3,
+        4,
+        7
+      ],
+      "out_of_range_clients": [
+        0,
+        5,
+        6
+      ],
+      "accuracy": 0.95
+    },
+    {
+      "timestep": 9,
+      "round": 3,
+      "phase": "CHECK",
+      "aggregation_server": 3,
+      "redistribution_server": 3,
+      "in_range_clients": [
+        1,
+        2,
+        5,
+        6,
+        7
+      ],
+      "out_of_range_clients": [
+        0,
+        3,
+        4
+      ],
+      "accuracy": 0.95
+    },
+    {
+      "timestep": 10,
+      "round": 4,
+      "phase": "TRANSMITTING",
+      "aggregation_server": 6,
+      "redistribution_server": 6,
+      "in_range_clients": [
+        1,
+        2,
+        3,
+        4,
+        7
+      ],
+      "out_of_range_clients": [
+        0,
+        5,
+        6
+      ],
+      "accuracy": 0.95
+    },
+    {
+      "timestep": 11,
+      "round": 4,
+      "phase": "REDISTRIBUTION",
+      "aggregation_server": 3,
+      "redistribution_server": 3,
+      "in_range_clients": [
+        1,
+        2,
+        5,
+        6,
+        7
+      ],
+      "out_of_range_clients": [
+        0,
+        3,
+        4
+      ],
+      "accuracy": 0.95
+    },
+    {
+      "timestep": 12,
+      "round": 4,
+      "phase": "CHECK",
+      "aggregation_server": 6,
+      "redistribution_server": 6,
+      "in_range_clients": [
+        1,
+        2,
+        3,
+        4,
+        7
+      ],
+      "out_of_range_clients": [
+        0,
+        5,
+        6
+      ],
+      "accuracy": 0.95
+    },
+    {
+      "timestep": 13,
+      "round": 5,
+      "phase": "TRANSMITTING",
+      "aggregation_server": 3,
+      "redistribution_server": 3,
+      "in_range_clients": [
+        1,
+        2,
+        5,
+        6,
+        7
+      ],
+      "out_of_range_clients": [
+        0,
+        3,
+        4
+      ],
+      "accuracy": 0.95
+    },
+    {
+      "timestep": 14,
+      "round": 5,
+      "phase": "REDISTRIBUTION",
+      "aggregation_server": 6,
+      "redistribution_server": 6,
+      "in_range_clients": [
+        1,
+        2,
+        3,
+        4,
+        7
+      ],
+      "out_of_range_clients": [
+        0,
+        5,
+        6
+      ],
+      "accuracy": 0.95
+    },
+    {
+      "timestep": 15,
+      "round": 5,
+      "phase": "CHECK",
+      "aggregation_server": 3,
+      "redistribution_server": 3,
+      "in_range_clients": [
+        1,
+        2,
+        5,
+        6,
+        7
+      ],
+      "out_of_range_clients": [
+        0,
+        3,
+        4
+      ],
+      "accuracy": 0.95
+    }
+  ],
+  "additional_metrics": {
+    "round_accuracies": [
+      0.6,
+      0.66,
+      0.72,
+      0.75,
+      0.81,
+      0.87,
+      0.9,
+      0.95,
+      0.95,
+      0.95,
+      0.95,
+      0.95,
+      0.95,
+      0.95,
+      0.95
+    ],
+    "participation_log": [
+      {
+        "timestep": 1,
+        "round": 1,
+        "phase": "TRANSMITTING",
+        "aggregation_server": 3,
+        "redistribution_server": 3,
+        "in_range_clients": [
+          1,
+          2,
+          5,
+          6,
+          7
+        ],
+        "out_of_range_clients": [
+          0,
+          3,
+          4
+        ],
+        "accuracy": 0.6
+      },
+      {
+        "timestep": 2,
+        "round": 1,
+        "phase": "REDISTRIBUTION",
+        "aggregation_server": 6,
+        "redistribution_server": 6,
+        "in_range_clients": [
+          1,
+          2,
+          3,
+          4,
+          7
+        ],
+        "out_of_range_clients": [
+          0,
+          5,
+          6
+        ],
+        "accuracy": 0.66
+      },
+      {
+        "timestep": 3,
+        "round": 1,
+        "phase": "CHECK",
+        "aggregation_server": 3,
+        "redistribution_server": 3,
+        "in_range_clients": [
+          1,
+          2,
+          5,
+          6,
+          7
+        ],
+        "out_of_range_clients": [
+          0,
+          3,
+          4
+        ],
+        "accuracy": 0.72
+      },
+      {
+        "timestep": 4,
+        "round": 2,
+        "phase": "TRANSMITTING",
+        "aggregation_server": 6,
+        "redistribution_server": 6,
+        "in_range_clients": [
+          1,
+          2,
+          3,
+          4,
+          7
+        ],
+        "out_of_range_clients": [
+          0,
+          5,
+          6
+        ],
+        "accuracy": 0.75
+      },
+      {
+        "timestep": 5,
+        "round": 2,
+        "phase": "REDISTRIBUTION",
+        "aggregation_server": 3,
+        "redistribution_server": 3,
+        "in_range_clients": [
+          1,
+          2,
+          5,
+          6,
+          7
+        ],
+        "out_of_range_clients": [
+          0,
+          3,
+          4
+        ],
+        "accuracy": 0.81
+      },
+      {
+        "timestep": 6,
+        "round": 2,
+        "phase": "CHECK",
+        "aggregation_server": 6,
+        "redistribution_server": 6,
+        "in_range_clients": [
+          1,
+          2,
+          3,
+          4,
+          7
+        ],
+        "out_of_range_clients": [
+          0,
+          5,
+          6
+        ],
+        "accuracy": 0.87
+      },
+      {
+        "timestep": 7,
+        "round": 3,
+        "phase": "TRANSMITTING",
+        "aggregation_server": 3,
+        "redistribution_server": 3,
+        "in_range_clients": [
+          1,
+          2,
+          5,
+          6,
+          7
+        ],
+        "out_of_range_clients": [
+          0,
+          3,
+          4
+        ],
+        "accuracy": 0.9
+      },
+      {
+        "timestep": 8,
+        "round": 3,
+        "phase": "REDISTRIBUTION",
+        "aggregation_server": 6,
+        "redistribution_server": 6,
+        "in_range_clients": [
+          1,
+          2,
+          3,
+          4,
+          7
+        ],
+        "out_of_range_clients": [
+          0,
+          5,
+          6
+        ],
+        "accuracy": 0.95
+      },
+      {
+        "timestep": 9,
+        "round": 3,
+        "phase": "CHECK",
+        "aggregation_server": 3,
+        "redistribution_server": 3,
+        "in_range_clients": [
+          1,
+          2,
+          5,
+          6,
+          7
+        ],
+        "out_of_range_clients": [
+          0,
+          3,
+          4
+        ],
+        "accuracy": 0.95
+      },
+      {
+        "timestep": 10,
+        "round": 4,
+        "phase": "TRANSMITTING",
+        "aggregation_server": 6,
+        "redistribution_server": 6,
+        "in_range_clients": [
+          1,
+          2,
+          3,
+          4,
+          7
+        ],
+        "out_of_range_clients": [
+          0,
+          5,
+          6
+        ],
+        "accuracy": 0.95
+      },
+      {
+        "timestep": 11,
+        "round": 4,
+        "phase": "REDISTRIBUTION",
+        "aggregation_server": 3,
+        "redistribution_server": 3,
+        "in_range_clients": [
+          1,
+          2,
+          5,
+          6,
+          7
+        ],
+        "out_of_range_clients": [
+          0,
+          3,
+          4
+        ],
+        "accuracy": 0.95
+      },
+      {
+        "timestep": 12,
+        "round": 4,
+        "phase": "CHECK",
+        "aggregation_server": 6,
+        "redistribution_server": 6,
+        "in_range_clients": [
+          1,
+          2,
+          3,
+          4,
+          7
+        ],
+        "out_of_range_clients": [
+          0,
+          5,
+          6
+        ],
+        "accuracy": 0.95
+      },
+      {
+        "timestep": 13,
+        "round": 5,
+        "phase": "TRANSMITTING",
+        "aggregation_server": 3,
+        "redistribution_server": 3,
+        "in_range_clients": [
+          1,
+          2,
+          5,
+          6,
+          7
+        ],
+        "out_of_range_clients": [
+          0,
+          3,
+          4
+        ],
+        "accuracy": 0.95
+      },
+      {
+        "timestep": 14,
+        "round": 5,
+        "phase": "REDISTRIBUTION",
+        "aggregation_server": 6,
+        "redistribution_server": 6,
+        "in_range_clients": [
+          1,
+          2,
+          3,
+          4,
+          7
+        ],
+        "out_of_range_clients": [
+          0,
+          5,
+          6
+        ],
+        "accuracy": 0.95
+      },
+      {
+        "timestep": 15,
+        "round": 5,
+        "phase": "CHECK",
+        "aggregation_server": 3,
+        "redistribution_server": 3,
+        "in_range_clients": [
+          1,
+          2,
+          5,
+          6,
+          7
+        ],
+        "out_of_range_clients": [
+          0,
+          3,
+          4
+        ],
+        "accuracy": 0.95
+      }
+    ]
+  }
+}
