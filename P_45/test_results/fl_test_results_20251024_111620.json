@@ -1,0 +1,45 @@
+{
+  "timestamp": "2025-10-24T11:16:20.659725",
+  "test_suite": "Federated Learning Module Standalone Test",
+  "total_tests": 2,
+  "successful_tests": 2,
+  "failed_tests": 0,
+  "results": [
+    {
+      "test_name": "FL Basic Test",
+      "start_time": "2025-10-24T11:12:55.190636",
+      "steps": {
+        "federated_learning": {
+          "status": "success",
+          "duration": 103.50852465629578,
+          "model_type": "SimpleCNN",
+          "data_set": "MNIST",
+          "num_rounds": 10,
+          "num_clients": 5
+        }
+      },
+      "end_time": "2025-10-24T11:14:41.459134",
+      "total_duration": 103.50852465629578,
+      "overall_status": "success"
+    },
+    {
+      "test_name": "FL with FLAM Test - flam_8n_100t_flomps_3phase_2025-10-24_11-07-29.csv",
+      "flam_file": "/Users/stephentsang/Documents/GitHub/SPACE_FLTeam/flomps_algorithm/output/flam_8n_100t_flomps_3phase_2025-10-24_11-07-29.csv",
+      "start_time": "2025-10-24T11:14:41.462162",
+      "steps": {
+        "federated_learning": {
+          "status": "success",
+          "duration": 99.19650030136108,
+          "model_type": "SimpleCNN",
+          "data_set": "MNIST",
+          "num_rounds": 10,
+          "num_clients": 5,
+          "flam_file": "flam_8n_100t_flomps_3phase_2025-10-24_11-07-29.csv"
+        }
+      },
+      "end_time": "2025-10-24T11:16:20.658677",
+      "total_duration": 99.19650030136108,
+      "overall_status": "success"
+    }
+  ]
+}

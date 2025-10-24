@@ -39,11 +39,24 @@ class AlgorithmOptions:
 
 class Config:
     # Constructor, accepts core module
-    def __init__(self, federated_learning: FederatedLearning):
+    def __init__(self, federated_learning: FederatedLearning = None):
         self.fl_core = federated_learning
         # self.model = Model()  # Removed: model_simple.py is no longer needed
         self.options = None
         self.model_options = None
+        
+        # Set default values for standalone usage
+        if self.fl_core is None:
+            self.model_type = "SimpleCNN"
+            self.data_set = "MNIST"
+            self.num_rounds = 10
+            self.num_clients = 5
+        else:
+            # Use values from fl_core if available
+            self.model_type = getattr(self.fl_core, 'model_type', "SimpleCNN")
+            self.data_set = getattr(self.fl_core, 'data_set', "MNIST")
+            self.num_rounds = getattr(self.fl_core, 'num_rounds', 10)
+            self.num_clients = getattr(self.fl_core, 'num_clients', 5)
 
     def read_options(self, options: dict):
         self.options = options

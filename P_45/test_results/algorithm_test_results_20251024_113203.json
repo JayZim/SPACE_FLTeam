@@ -1,0 +1,29 @@
+{
+  "timestamp": "2025-10-24T11:32:03.343444",
+  "test_suite": "Algorithm Module Standalone Test",
+  "result": {
+    "test_name": "Algorithm Standalone Test",
+    "start_time": "2025-10-24T11:32:03.049061",
+    "steps": {
+      "algorithm": {
+        "status": "success",
+        "duration": 0.0024940967559814453,
+        "satellites": 8,
+        "timesteps": 10,
+        "satellite_names": [
+          "SAT_1",
+          "SAT_2",
+          "SAT_3",
+          "SAT_4",
+          "SAT_5",
+          "SAT_6",
+          "SAT_7",
+          "SAT_8"
+        ]
+      }
+    },
+    "end_time": "2025-10-24T11:32:03.343262",
+    "total_duration": 0.0024940967559814453,
+    "overall_status": "success"
+  }
+}

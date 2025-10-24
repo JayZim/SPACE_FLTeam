@@ -38,7 +38,7 @@ def test_single_tle(tle_file, test_name):
         return {
             "test_name": test_name,
             "tle_file": tle_file,
-            "status": "failed",
+            "overall_status": "failed",
             "error": "TLE file does not exist"
         }
     
@@ -213,31 +213,31 @@ def main():
     # All TLE file configurations
     tle_configs = [
         {
-            "file": "TLEs/NovaSar.tle",
+            "file": str(project_root / "TLEs" / "NovaSar.tle"),
             "name": "NovaSar Satellite Constellation (1 satellite)"
         },
         {
-            "file": "TLEs/SatCount1.tle",
+            "file": str(project_root / "TLEs" / "SatCount1.tle"),
             "name": "Single Satellite Configuration (1 satellite)"
         },
         {
-            "file": "TLEs/SatCount3.tle",
+            "file": str(project_root / "TLEs" / "SatCount3.tle"),
             "name": "Three Satellite Configuration (3 satellites)"
         },
         {
-            "file": "TLEs/SatCount4.tle",
+            "file": str(project_root / "TLEs" / "SatCount4.tle"),
             "name": "Four Satellite Configuration (4 satellites)"
         },
         {
-            "file": "TLEs/SatCount8.tle",
+            "file": str(project_root / "TLEs" / "SatCount8.tle"),
             "name": "Eight Satellite Configuration (8 satellites)"
         },
         {
-            "file": "TLEs/SatCount40.tle",
+            "file": str(project_root / "TLEs" / "SatCount40.tle"),
             "name": "Forty Satellite Configuration (40 satellites)"
         },
         {
-            "file": "TLEs/Walker.tle",
+            "file": str(project_root / "TLEs" / "Walker.tle"),
             "name": "Walker Satellite Constellation (1 satellite)"
         }
     ]

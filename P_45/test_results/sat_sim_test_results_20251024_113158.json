@@ -1,0 +1,98 @@
+{
+  "timestamp": "2025-10-24T11:31:58.650951",
+  "test_suite": "Satellite Simulation Module Standalone Test",
+  "total_tests": 4,
+  "successful_tests": 4,
+  "failed_tests": 0,
+  "success_rate": 100.0,
+  "results": [
+    {
+      "test_name": "SatSim Test - SatCount1.tle",
+      "tle_file": "/Users/stephentsang/Documents/GitHub/SPACE_FLTeam/TLEs/SatCount1.tle",
+      "start_time": "2025-10-24T11:31:57.588004",
+      "steps": {
+        "sat_sim": {
+          "status": "success",
+          "duration": 0.3142659664154053,
+          "satellites": 1,
+          "timesteps": 60,
+          "satellite_names": [
+            "Satellite 1"
+          ]
+        }
+      },
+      "end_time": "2025-10-24T11:31:58.051612",
+      "total_duration": 0.3142659664154053,
+      "overall_status": "success"
+    },
+    {
+      "test_name": "SatSim Test - SatCount3.tle",
+      "tle_file": "/Users/stephentsang/Documents/GitHub/SPACE_FLTeam/TLEs/SatCount3.tle",
+      "start_time": "2025-10-24T11:31:58.051687",
+      "steps": {
+        "sat_sim": {
+          "status": "success",
+          "duration": 0.2121272087097168,
+          "satellites": 3,
+          "timesteps": 60,
+          "satellite_names": [
+            "Satellite 1",
+            "Satellite 2",
+            "Satellite 3"
+          ]
+        }
+      },
+      "end_time": "2025-10-24T11:31:58.263825",
+      "total_duration": 0.2121272087097168,
+      "overall_status": "success"
+    },
+    {
+      "test_name": "SatSim Test - SatCount4.tle",
+      "tle_file": "/Users/stephentsang/Documents/GitHub/SPACE_FLTeam/TLEs/SatCount4.tle",
+      "start_time": "2025-10-24T11:31:58.264385",
+      "steps": {
+        "sat_sim": {
+          "status": "success",
+          "duration": 0.16540122032165527,
+          "satellites": 4,
+          "timesteps": 60,
+          "satellite_names": [
+            "Satellite 1",
+            "Satellite 2",
+            "Satellite 3",
+            "Satellite 4"
+          ]
+        }
+      },
+      "end_time": "2025-10-24T11:31:58.429794",
+      "total_duration": 0.16540122032165527,
+      "overall_status": "success"
+    },
+    {
+      "test_name": "SatSim Test - SatCount8.tle",
+      "tle_file": "/Users/stephentsang/Documents/GitHub/SPACE_FLTeam/TLEs/SatCount8.tle",
+      "start_time": "2025-10-24T11:31:58.429854",
+      "steps": {
+        "sat_sim": {
+          "status": "success",
+          "duration": 0.2210376262664795,
+          "satellites": 8,
+          "timesteps": 60,
+          "satellite_names": [
+            "Satellite 1",
+            "Satellite 2",
+            "Satellite 3",
+            "Satellite 4",
+            "Satellite 5",
+            "Satellite 6",
+            "Satellite 7",
+            "Satellite 8"
+          ]
+        }
+      },
+      "end_time": "2025-10-24T11:31:58.650899",
+      "total_duration": 0.2210376262664795,
+      "overall_status": "success"
+    }
+  ]
+}

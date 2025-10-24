@@ -1,0 +1,90 @@
+Time: 0, Timestep: 1, Round: 1, Phase: TRANSMITTING, Aggregation Server: 1, Redistribution Server: TBD, Target Node: 1, Phase Length: 1, Timestep in Phase: 1, Current Connections: 7, Cumulative Connections: 7/7, Connected Sats: [0, 2, 3, 4, 5, 6, 7], Missing Sats: [], Target Sats: [0, 2, 3, 4, 5, 6, 7], Phase Complete: True
+0.0,1.0,1.0,0.0,1.0,1.0,0.0,0.0
+1.0,0.0,1.0,1.0,1.0,1.0,1.0,1.0
+1.0,1.0,0.0,0.0,1.0,1.0,1.0,1.0
+0.0,1.0,0.0,0.0,1.0,1.0,1.0,1.0
+1.0,1.0,1.0,1.0,0.0,1.0,1.0,1.0
+1.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0
+0.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0
+0.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0
+Time: 1, Timestep: 2, Round: 1, Phase: REDISTRIBUTION, Aggregation Server: 1, Redistribution Server: 1, Target Node: 1, Phase Length: 2, Timestep in Phase: 1, Current Connections: 6, Cumulative Connections: 6/7, Connected Sats: [0, 2, 3, 4, 6, 7], Missing Sats: [5], Target Sats: [0, 2, 3, 4, 5, 6, 7], Phase Complete: False
+0.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0
+1.0,0.0,1.0,1.0,1.0,0.0,1.0,1.0
+1.0,1.0,0.0,1.0,1.0,1.0,1.0,0.0
+1.0,1.0,1.0,0.0,1.0,1.0,0.0,0.0
+1.0,1.0,1.0,1.0,0.0,1.0,0.0,1.0
+1.0,0.0,1.0,1.0,1.0,0.0,1.0,1.0
+1.0,1.0,1.0,0.0,0.0,1.0,0.0,1.0
+1.0,1.0,0.0,0.0,1.0,1.0,1.0,0.0
+Time: 2, Timestep: 3, Round: 1, Phase: REDISTRIBUTION, Aggregation Server: 1, Redistribution Server: 1, Target Node: 1, Phase Length: 2, Timestep in Phase: 2, Current Connections: 5, Cumulative Connections: 7/7, Connected Sats: [0, 2, 3, 4, 5, 6, 7], Missing Sats: [], Target Sats: [0, 2, 3, 4, 5, 6, 7], Phase Complete: True
+0.0,0.0,1.0,1.0,1.0,1.0,1.0,1.0
+0.0,0.0,1.0,0.0,1.0,1.0,1.0,1.0
+1.0,1.0,0.0,1.0,0.0,1.0,0.0,1.0
+1.0,0.0,1.0,0.0,1.0,1.0,0.0,1.0
+1.0,1.0,0.0,1.0,0.0,0.0,1.0,1.0
+1.0,1.0,1.0,1.0,0.0,0.0,1.0,1.0
+1.0,1.0,0.0,0.0,1.0,1.0,0.0,1.0
+1.0,1.0,1.0,1.0,1.0,1.0,1.0,0.0
+Time: 3, Timestep: 4, Round: 2, Phase: TRANSMITTING, Aggregation Server: 0, Redistribution Server: TBD, Target Node: 0, Phase Length: 2, Timestep in Phase: 1, Current Connections: 6, Cumulative Connections: 6/7, Connected Sats: [2, 3, 4, 5, 6, 7], Missing Sats: [1], Target Sats: [1, 2, 3, 4, 5, 6, 7], Phase Complete: False
+0.0,0.0,1.0,1.0,1.0,1.0,1.0,1.0
+0.0,0.0,1.0,1.0,1.0,1.0,1.0,1.0
+1.0,1.0,0.0,1.0,0.0,0.0,1.0,1.0
+1.0,1.0,1.0,0.0,1.0,1.0,1.0,1.0
+1.0,1.0,0.0,1.0,0.0,1.0,1.0,1.0
+1.0,1.0,0.0,1.0,1.0,0.0,1.0,1.0
+1.0,1.0,1.0,1.0,1.0,1.0,0.0,1.0
+1.0,1.0,1.0,1.0,1.0,1.0,1.0,0.0
+Time: 4, Timestep: 5, Round: 2, Phase: TRANSMITTING, Aggregation Server: 0, Redistribution Server: TBD, Target Node: 0, Phase Length: 2, Timestep in Phase: 2, Current Connections: 6, Cumulative Connections: 7/7, Connected Sats: [1, 2, 3, 4, 5, 6, 7], Missing Sats: [], Target Sats: [1, 2, 3, 4, 5, 6, 7], Phase Complete: True
+0.0,1.0,1.0,1.0,1.0,1.0,1.0,0.0
+1.0,0.0,1.0,1.0,1.0,1.0,1.0,1.0
+1.0,1.0,0.0,1.0,1.0,1.0,1.0,1.0
+1.0,1.0,1.0,0.0,1.0,0.0,1.0,1.0
+1.0,1.0,1.0,1.0,0.0,0.0,0.0,1.0
+1.0,1.0,1.0,0.0,0.0,0.0,1.0,1.0
+1.0,1.0,1.0,1.0,0.0,1.0,0.0,1.0
+0.0,1.0,1.0,1.0,1.0,1.0,1.0,0.0
+Time: 5, Timestep: 6, Round: 2, Phase: REDISTRIBUTION, Aggregation Server: 0, Redistribution Server: 0, Target Node: 0, Phase Length: 3, Timestep in Phase: 1, Current Connections: 5, Cumulative Connections: 5/7, Connected Sats: [1, 3, 4, 6, 7], Missing Sats: [2, 5], Target Sats: [1, 2, 3, 4, 5, 6, 7], Phase Complete: False
+0.0,1.0,0.0,1.0,1.0,0.0,1.0,1.0
+1.0,0.0,1.0,1.0,1.0,1.0,0.0,0.0
+0.0,1.0,0.0,0.0,1.0,1.0,0.0,0.0
+1.0,1.0,0.0,0.0,1.0,1.0,1.0,1.0
+1.0,1.0,1.0,1.0,0.0,1.0,1.0,0.0
+0.0,1.0,1.0,1.0,1.0,0.0,0.0,1.0
+1.0,0.0,0.0,1.0,1.0,0.0,0.0,1.0
+1.0,0.0,0.0,1.0,0.0,1.0,1.0,0.0
+Time: 6, Timestep: 7, Round: 2, Phase: REDISTRIBUTION, Aggregation Server: 0, Redistribution Server: 0, Target Node: 0, Phase Length: 3, Timestep in Phase: 2, Current Connections: 4, Cumulative Connections: 6/7, Connected Sats: [1, 2, 3, 4, 6, 7], Missing Sats: [5], Target Sats: [1, 2, 3, 4, 5, 6, 7], Phase Complete: False
+0.0,0.0,1.0,1.0,1.0,0.0,1.0,0.0
+0.0,0.0,1.0,1.0,1.0,1.0,1.0,1.0
+1.0,1.0,0.0,1.0,1.0,1.0,1.0,0.0
+1.0,1.0,1.0,0.0,1.0,1.0,1.0,1.0
+1.0,1.0,1.0,1.0,0.0,1.0,1.0,1.0
+0.0,1.0,1.0,1.0,1.0,0.0,1.0,1.0
+1.0,1.0,1.0,1.0,1.0,1.0,0.0,1.0
+0.0,1.0,0.0,1.0,1.0,1.0,1.0,0.0
+Time: 7, Timestep: 8, Round: 2, Phase: REDISTRIBUTION, Aggregation Server: 0, Redistribution Server: 0, Target Node: 0, Phase Length: 3, Timestep in Phase: 3, Current Connections: 5, Cumulative Connections: 7/7, Connected Sats: [1, 2, 3, 4, 5, 6, 7], Missing Sats: [], Target Sats: [1, 2, 3, 4, 5, 6, 7], Phase Complete: True
+0.0,1.0,0.0,1.0,1.0,1.0,0.0,1.0
+1.0,0.0,1.0,1.0,1.0,1.0,1.0,1.0
+0.0,1.0,0.0,1.0,1.0,1.0,1.0,1.0
+1.0,1.0,1.0,0.0,1.0,1.0,0.0,1.0
+1.0,1.0,1.0,1.0,0.0,1.0,1.0,1.0
+1.0,1.0,1.0,1.0,1.0,0.0,1.0,1.0
+0.0,1.0,1.0,0.0,1.0,1.0,0.0,1.0
+1.0,1.0,1.0,1.0,1.0,1.0,1.0,0.0
+Time: 8, Timestep: 9, Round: 3, Phase: TRANSMITTING, Aggregation Server: 2, Redistribution Server: TBD, Target Node: 2, Phase Length: 1, Timestep in Phase: 1, Current Connections: 7, Cumulative Connections: 7/7, Connected Sats: [0, 1, 3, 4, 5, 6, 7], Missing Sats: [], Target Sats: [0, 1, 3, 4, 5, 6, 7], Phase Complete: True
+0.0,1.0,1.0,0.0,1.0,1.0,0.0,1.0
+1.0,0.0,1.0,1.0,0.0,1.0,1.0,0.0
+1.0,1.0,0.0,1.0,1.0,1.0,1.0,1.0
+0.0,1.0,1.0,0.0,0.0,1.0,1.0,1.0
+1.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0
+1.0,1.0,1.0,1.0,0.0,0.0,1.0,1.0
+0.0,1.0,1.0,1.0,0.0,1.0,0.0,1.0
+1.0,0.0,1.0,1.0,0.0,1.0,1.0,0.0
+Time: 9, Timestep: 10, Round: 3, Phase: REDISTRIBUTION, Aggregation Server: 2, Redistribution Server: 2, Target Node: 2, Phase Length: 1, Timestep in Phase: 1, Current Connections: 6, Cumulative Connections: 6/6, Connected Sats: [0, 1, 3, 4, 5, 7], Missing Sats: [], Target Sats: [0, 1, 3, 4, 5, 7], Phase Complete: True
+0.0,0.0,1.0,1.0,1.0,1.0,1.0,1.0
+0.0,0.0,1.0,0.0,1.0,1.0,1.0,1.0
+1.0,1.0,0.0,1.0,1.0,1.0,0.0,1.0
+1.0,0.0,1.0,0.0,1.0,0.0,0.0,1.0
+1.0,1.0,1.0,1.0,0.0,1.0,1.0,1.0
+1.0,1.0,1.0,0.0,1.0,0.0,0.0,0.0
+1.0,1.0,0.0,0.0,1.0,0.0,0.0,0.0
+1.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0

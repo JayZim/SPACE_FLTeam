@@ -38,7 +38,7 @@ def test_sat_sim_module(tle_file, test_name="SatSim Standalone Test"):
         return {
             "test_name": test_name,
             "tle_file": tle_file,
-            "status": "failed",
+            "overall_status": "failed",
             "error": "TLE file does not exist"
         }
     
@@ -152,10 +152,10 @@ def main():
     
     # Test configuration
     tle_files = [
-        "TLEs/SatCount1.tle",
-        "TLEs/SatCount3.tle",
-        "TLEs/SatCount4.tle",
-        "TLEs/SatCount8.tle"
+        str(project_root / "TLEs" / "SatCount1.tle"),
+        str(project_root / "TLEs" / "SatCount3.tle"),
+        str(project_root / "TLEs" / "SatCount4.tle"),
+        str(project_root / "TLEs" / "SatCount8.tle")
     ]
     
     results = []

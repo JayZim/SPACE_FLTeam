@@ -53,7 +53,7 @@ def test_fl_module(test_name="FL Standalone Test"):
         
         # Create FL configuration
         print("⚙️  Creating FL configuration...")
-        fl_config = FLConfig()
+        fl_config = FLConfig(fl_instance)
         
         print(f"✅ FL configuration created:")
         print(f"   - Model type: {fl_config.model_type}")

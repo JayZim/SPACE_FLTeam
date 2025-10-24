@@ -1,0 +1,26 @@
+{
+  "timestamp": "2025-10-24T11:10:52.167584",
+  "test_suite": "Federated Learning Module Standalone Test",
+  "total_tests": 2,
+  "successful_tests": 0,
+  "failed_tests": 2,
+  "results": [
+    {
+      "test_name": "FL Basic Test",
+      "start_time": "2025-10-24T11:09:08.113045",
+      "steps": {},
+      "end_time": "2025-10-24T11:09:10.456365",
+      "overall_status": "failed",
+      "error": "Config.__init__() missing 1 required positional argument: 'federated_learning'"
+    },
+    {
+      "test_name": "FL with FLAM Test - flam_8n_100t_flomps_3phase_2025-10-24_11-07-29.csv",
+      "flam_file": "/Users/stephentsang/Documents/GitHub/SPACE_FLTeam/flomps_algorithm/output/flam_8n_100t_flomps_3phase_2025-10-24_11-07-29.csv",
+      "start_time": "2025-10-24T11:09:10.456622",
+      "steps": {},
+      "end_time": "2025-10-24T11:10:52.166444",
+      "overall_status": "failed",
+      "error": "Federated Learning run failed, no results returned"
+    }
+  ]
+}

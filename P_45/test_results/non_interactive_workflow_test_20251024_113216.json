@@ -1,0 +1,25 @@
+{
+  "test_name": "Non-Interactive Complete Workflow Test",
+  "start_time": "2025-10-24T11:32:10.664625",
+  "steps": {
+    "satellite_simulation": {
+      "status": "success",
+      "duration": 0.21420884132385254,
+      "satellites": 8,
+      "timesteps": 3
+    },
+    "algorithm": {
+      "status": "success",
+      "duration": 0.19768404960632324,
+      "output_files": "flomps_algorithm/output/"
+    },
+    "federated_learning": {
+      "status": "success",
+      "duration": 5.382251977920532,
+      "message": "FL module initialized successfully (training skipped for automation)"
+    }
+  },
+  "overall_status": "success",
+  "end_time": "2025-10-24T11:32:16.458789",
+  "total_duration": 5.794144868850708
+}

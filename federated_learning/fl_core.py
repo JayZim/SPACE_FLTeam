@@ -1068,7 +1068,6 @@ class FederatedLearning:
         self.total_training_time = time.time() - total_start_time
         self.round_accuracies = round_accuracies
 
-
         print(f"\nFederated learning process completed in {self.total_training_time:.2f} seconds.")
         print("\nTimestep-wise processing times and accuracies:")
         for idx, round_time in self.round_times.items():
@@ -1082,6 +1081,20 @@ class FederatedLearning:
             print(f"Average timestep time: {self.total_training_time/len(self.round_times):.2f} seconds")
         else:
             print("No timesteps processed")
+        
+        # Return results for testing
+        return {
+            "status": "success",
+            "total_training_time": self.total_training_time,
+            "round_accuracies": self.round_accuracies,
+            "round_times": self.round_times,
+            "participation_log": self.participation_log,
+            "final_accuracy": round_accuracies[-1] if round_accuracies else 0.0,
+            "model_type": getattr(self, 'selected_model_name', 'Unknown'),
+            "dataset": getattr(self, 'current_dataset', 'Unknown'),
+            "num_rounds": self.num_rounds,
+            "num_clients": self.num_clients
+        }
 
 if __name__ == "__main__":
     """Standalone entry point for testing FederatedLearning."""
