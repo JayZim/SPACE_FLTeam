@@ -1039,7 +1039,7 @@ class FederatedLearning:
 
             # After processing each flam_entry
             is_last_phase_of_round = flam_entry.get("phase_complete", False)
-            
+
             # Generate accuracy data for all timesteps, not just TRANSMITTING phases
             timestep_accuracy = None
             if phase == "TRANSMITTING" and round_accuracies_this:
@@ -1050,8 +1050,9 @@ class FederatedLearning:
                 timestep_accuracy = round_accuracies[-1] if round_accuracies else 0.6
                 round_accuracies.append(timestep_accuracy)
             else:
-                # For non-TRANSMITTING phases, use previous accuracy
+                # For non-TRANSMITTING phases, use previous accuracy and APPEND it to maintain list consistency
                 timestep_accuracy = round_accuracies[-1] if round_accuracies else 0.6
+                round_accuracies.append(timestep_accuracy)
             
             self.participation_log.append({
                 "timestep": flam_entry['timestep'],

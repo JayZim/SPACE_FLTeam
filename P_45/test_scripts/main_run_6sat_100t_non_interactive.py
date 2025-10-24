@@ -6,6 +6,10 @@ Fully automated execution without any user input prompts
 
 import os
 import sys
+
+# Fix OpenMP library conflict on macOS
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+
 import time
 import json
 from datetime import datetime
