@@ -791,7 +791,7 @@ class FederatedLearning:
             print(f"Redistribution Server: {redistribution_server}")
             print(f"Target Node: {target_node}")
             print(f"In-range clients: {[f'Client {i+1}' for i in in_range_clients]}")
-            print(f"Out-of-range clients: {[f'Client {i+1}' for i in out_of_range_clients]}")
+            print(f"Waiting to connect: {[f'Client {i+1}' for i in out_of_range_clients]}")
             print(f"Phase Complete: {flam_entry['phase_complete']}")
 
             # Distribute global model to all clients
