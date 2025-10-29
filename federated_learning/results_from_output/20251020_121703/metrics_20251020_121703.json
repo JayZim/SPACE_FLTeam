@@ -1,0 +1,1978 @@
+{
+    "accuracy": 75.88518518518518,
+    "loss": 7.151820023287225,
+    "processing_time": 15562.975999832153,
+    "evaluation_time": 62.069501638412476,
+    "timestamp": "2025-10-20T16:37:26.779238",
+    "additional_metrics": {
+        "timestep_1": 687.6840016841888,
+        "timestep_2": 687.7630007266998,
+        "timestep_3": 687.8395011425018,
+        "timestep_4": 687.9135007858276,
+        "timestep_5": 687.9920010566711,
+        "timestep_6": 690.8860001564026,
+        "timestep_8": 1231.425502538681,
+        "timestep_9": 1231.4980018138885,
+        "timestep_10": 1231.5705015659332,
+        "timestep_11": 1231.6419999599457,
+        "timestep_12": 1231.712001800537,
+        "timestep_13": 1231.7875003814697,
+        "timestep_14": 1515.0570001602173,
+        "timestep_17": 1783.6870002746582,
+        "timestep_18": 1783.76500248909,
+        "timestep_19": 1783.9264998435974,
+        "timestep_20": 1784.0684995651245,
+        "timestep_21": 1784.148000240326,
+        "timestep_22": 1784.2300016880035,
+        "timestep_23": 1784.306000471115,
+        "timestep_24": 1784.3780007362366,
+        "timestep_25": 1784.4520025253296,
+        "timestep_26": 1784.5245003700256,
+        "timestep_27": 1784.5975000858307,
+        "timestep_28": 2052.2439992427826,
+        "timestep_30": 2844.8580005168915,
+        "timestep_32": 3630.146999359131,
+        "timestep_34": 4414.850501298904,
+        "timestep_36": 5198.77799987793,
+        "timestep_38": 5977.709999322891,
+        "timestep_40": 6759.490500450134,
+        "timestep_42": 7292.1744992733,
+        "timestep_43": 7292.305501461029,
+        "timestep_44": 7292.377500772476,
+        "timestep_45": 7292.446002483368,
+        "timestep_46": 7292.521501541138,
+        "timestep_47": 7292.587000370026,
+        "timestep_48": 7292.6605014801025,
+        "timestep_49": 7292.731999874115,
+        "timestep_50": 7292.812000989914,
+        "timestep_51": 7292.892000198364,
+        "timestep_52": 7292.968000173569,
+        "timestep_53": 7293.041501522064,
+        "timestep_54": 7295.9769995212555,
+        "timestep_57": 7822.596999168396,
+        "timestep_58": 7822.670502662659,
+        "timestep_59": 7822.738502025604,
+        "timestep_60": 7822.812999486923,
+        "timestep_61": 7822.885500192642,
+        "timestep_62": 7822.953501462936,
+        "timestep_63": 7823.025999307632,
+        "timestep_64": 7823.09450006485,
+        "timestep_65": 8078.526002407074,
+        "timestep_68": 8344.46649980545,
+        "timestep_69": 8344.605999946594,
+        "timestep_70": 8344.680499076843,
+        "timestep_71": 8344.754000425339,
+        "timestep_72": 8344.828999996185,
+        "timestep_73": 8344.898502111435,
+        "timestep_74": 8344.968500614166,
+        "timestep_75": 8345.039499998093,
+        "timestep_76": 8345.111002206802,
+        "timestep_77": 8345.183500051498,
+        "timestep_78": 8345.254501104355,
+        "timestep_79": 8599.01099896431,
+        "timestep_81": 9380.619999885559,
+        "timestep_83": 10160.76200222969,
+        "timestep_85": 10959.09450173378,
+        "timestep_87": 11774.9359998703,
+        "timestep_89": 12545.60300040245,
+        "timestep_91": 13342.722000598907,
+        "timestep_93": 13886.949499130249,
+        "timestep_95": 14446.428003072739,
+        "timestep_97": 15017.519499540329,
+        "timestep_99": 15562.839998960495,
+        "round_accuracies": [
+            0.4492209708226307,
+            0,
+            0,
+            0,
+            0,
+            0.4066666666666667,
+            0.6576289270895079,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.9272541658433775,
+            0.5560999802410591,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.9450372126720674,
+            0.7201562054051679,
+            0.7708136292783596,
+            0.7855782783376144,
+            0.8049642143625545,
+            0.8109796043820939,
+            0.8390909789457508,
+            0.8270922742541,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.7033333333333334,
+            0.8672503457814662,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.9714153988012909,
+            0.7152870974115788,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0.9754989132582493,
+            0.811908494149158,
+            0.8516096950536785,
+            0.8615261586423412,
+            0.875540077718501,
+            0.8780324485718678,
+            0.8734934905266855,
+            0.8710411644602516,
+            0.889489033787789,
+            0.8760883883290521,
+            0.8984389119409866
+        ],
+        "participation_log": [
+            {
+                "timestep": 1,
+                "round": 1,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    3,
+                    4,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    5
+                ],
+                "accuracy": 0.4492209708226307,
+                "round_complete": false
+            },
+            {
+                "timestep": 2,
+                "round": 1,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    3,
+                    4,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    5
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 3,
+                "round": 1,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    3,
+                    4,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    5
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 4,
+                "round": 1,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    3,
+                    4,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    5
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 5,
+                "round": 1,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    3,
+                    4,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    5
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 6,
+                "round": 1,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.4066666666666667,
+                "round_complete": true
+            },
+            {
+                "timestep": 7,
+                "round": 1,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 2,
+                "redistribution_server": 2,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 8,
+                "round": 2,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": 0.6576289270895079,
+                "round_complete": false
+            },
+            {
+                "timestep": 9,
+                "round": 2,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 10,
+                "round": 2,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 11,
+                "round": 2,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 12,
+                "round": 2,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 13,
+                "round": 2,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 14,
+                "round": 2,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.9272541658433775,
+                "round_complete": true
+            },
+            {
+                "timestep": 15,
+                "round": 2,
+                "phase": "CHECK",
+                "aggregation_server": 7,
+                "redistribution_server": 5,
+                "in_range_clients": [],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 16,
+                "round": 2,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 7,
+                "redistribution_server": 5,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 17,
+                "round": 3,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": 0.5560999802410591,
+                "round_complete": false
+            },
+            {
+                "timestep": 18,
+                "round": 3,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 19,
+                "round": 3,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 20,
+                "round": 3,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 21,
+                "round": 3,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 22,
+                "round": 3,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 23,
+                "round": 3,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 24,
+                "round": 3,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 25,
+                "round": 3,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 26,
+                "round": 3,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 27,
+                "round": 3,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 28,
+                "round": 3,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.9450372126720674,
+                "round_complete": true
+            },
+            {
+                "timestep": 29,
+                "round": 3,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 2,
+                "redistribution_server": 2,
+                "in_range_clients": [
+                    1,
+                    3,
+                    4,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 30,
+                "round": 4,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.7201562054051679,
+                "round_complete": true
+            },
+            {
+                "timestep": 31,
+                "round": 4,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 7,
+                "redistribution_server": 7,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 32,
+                "round": 5,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.7708136292783596,
+                "round_complete": true
+            },
+            {
+                "timestep": 33,
+                "round": 5,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 7,
+                "redistribution_server": 7,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 34,
+                "round": 6,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.7855782783376144,
+                "round_complete": true
+            },
+            {
+                "timestep": 35,
+                "round": 6,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 7,
+                "redistribution_server": 7,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 36,
+                "round": 7,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.8049642143625545,
+                "round_complete": true
+            },
+            {
+                "timestep": 37,
+                "round": 7,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 7,
+                "redistribution_server": 7,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 38,
+                "round": 8,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.8109796043820939,
+                "round_complete": true
+            },
+            {
+                "timestep": 39,
+                "round": 8,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 7,
+                "redistribution_server": 7,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 40,
+                "round": 9,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.8390909789457508,
+                "round_complete": true
+            },
+            {
+                "timestep": 41,
+                "round": 9,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 7,
+                "redistribution_server": 7,
+                "in_range_clients": [
+                    0,
+                    2,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 42,
+                "round": 10,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 4,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    1
+                ],
+                "accuracy": 0.8270922742541,
+                "round_complete": false
+            },
+            {
+                "timestep": 43,
+                "round": 10,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 4,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    1
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 44,
+                "round": 10,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 4,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    1
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 45,
+                "round": 10,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 4,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    1
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 46,
+                "round": 10,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 4,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    1
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 47,
+                "round": 10,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 4,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    1
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 48,
+                "round": 10,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 4,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    1
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 49,
+                "round": 10,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 4,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    1
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 50,
+                "round": 10,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 4,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    1
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 51,
+                "round": 10,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 4,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    1
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 52,
+                "round": 10,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 4,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    1
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 53,
+                "round": 10,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 4,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    1
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 54,
+                "round": 10,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 4,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    1,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.7033333333333334,
+                "round_complete": true
+            },
+            {
+                "timestep": 55,
+                "round": 10,
+                "phase": "CHECK",
+                "aggregation_server": 4,
+                "redistribution_server": 1,
+                "in_range_clients": [],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 56,
+                "round": 10,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 4,
+                "redistribution_server": 1,
+                "in_range_clients": [
+                    2,
+                    4,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 57,
+                "round": 11,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": 0.8672503457814662,
+                "round_complete": false
+            },
+            {
+                "timestep": 58,
+                "round": 11,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 59,
+                "round": 11,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 60,
+                "round": 11,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 61,
+                "round": 11,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 62,
+                "round": 11,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 63,
+                "round": 11,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 64,
+                "round": 11,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 65,
+                "round": 11,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.9714153988012909,
+                "round_complete": true
+            },
+            {
+                "timestep": 66,
+                "round": 11,
+                "phase": "CHECK",
+                "aggregation_server": 7,
+                "redistribution_server": 5,
+                "in_range_clients": [],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 67,
+                "round": 11,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 7,
+                "redistribution_server": 5,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 68,
+                "round": 12,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": 0.7152870974115788,
+                "round_complete": false
+            },
+            {
+                "timestep": 69,
+                "round": 12,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 70,
+                "round": 12,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 71,
+                "round": 12,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 72,
+                "round": 12,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 73,
+                "round": 12,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 74,
+                "round": 12,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 75,
+                "round": 12,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 76,
+                "round": 12,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 77,
+                "round": 12,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 78,
+                "round": 12,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [
+                    3
+                ],
+                "accuracy": null,
+                "round_complete": false
+            },
+            {
+                "timestep": 79,
+                "round": 12,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    3,
+                    4,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.9754989132582493,
+                "round_complete": true
+            },
+            {
+                "timestep": 80,
+                "round": 12,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 2,
+                "redistribution_server": 2,
+                "in_range_clients": [
+                    1,
+                    3,
+                    4,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 81,
+                "round": 13,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.811908494149158,
+                "round_complete": true
+            },
+            {
+                "timestep": 82,
+                "round": 13,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 7,
+                "redistribution_server": 7,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 83,
+                "round": 14,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.8516096950536785,
+                "round_complete": true
+            },
+            {
+                "timestep": 84,
+                "round": 14,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 7,
+                "redistribution_server": 7,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 85,
+                "round": 15,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.8615261586423412,
+                "round_complete": true
+            },
+            {
+                "timestep": 86,
+                "round": 15,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 7,
+                "redistribution_server": 7,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 87,
+                "round": 16,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.875540077718501,
+                "round_complete": true
+            },
+            {
+                "timestep": 88,
+                "round": 16,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 7,
+                "redistribution_server": 7,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 89,
+                "round": 17,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.8780324485718678,
+                "round_complete": true
+            },
+            {
+                "timestep": 90,
+                "round": 17,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 7,
+                "redistribution_server": 7,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 91,
+                "round": 18,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 7,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.8734934905266855,
+                "round_complete": true
+            },
+            {
+                "timestep": 92,
+                "round": 18,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 7,
+                "redistribution_server": 7,
+                "in_range_clients": [
+                    0,
+                    2,
+                    3,
+                    4,
+                    5,
+                    6
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 93,
+                "round": 19,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 4,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.8710411644602516,
+                "round_complete": true
+            },
+            {
+                "timestep": 94,
+                "round": 19,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 4,
+                "redistribution_server": 4,
+                "in_range_clients": [
+                    0,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 95,
+                "round": 20,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 4,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    0,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.889489033787789,
+                "round_complete": true
+            },
+            {
+                "timestep": 96,
+                "round": 20,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 4,
+                "redistribution_server": 4,
+                "in_range_clients": [
+                    0,
+                    2,
+                    5,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 97,
+                "round": 21,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    3,
+                    4,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.8760883883290521,
+                "round_complete": true
+            },
+            {
+                "timestep": 98,
+                "round": 21,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 2,
+                "redistribution_server": 2,
+                "in_range_clients": [
+                    1,
+                    3,
+                    4,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            },
+            {
+                "timestep": 99,
+                "round": 22,
+                "phase": "TRANSMITTING",
+                "aggregation_server": 2,
+                "redistribution_server": null,
+                "in_range_clients": [
+                    1,
+                    3,
+                    4,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": 0.8984389119409866,
+                "round_complete": true
+            },
+            {
+                "timestep": 100,
+                "round": 22,
+                "phase": "REDISTRIBUTION",
+                "aggregation_server": 2,
+                "redistribution_server": 2,
+                "in_range_clients": [
+                    1,
+                    3,
+                    4,
+                    6,
+                    7
+                ],
+                "out_of_range_clients": [],
+                "accuracy": null,
+                "round_complete": true
+            }
+        ]
+    }
+}

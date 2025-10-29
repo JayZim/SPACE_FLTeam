@@ -199,6 +199,43 @@ if __name__ == "__main__":
     from flomps_algorithm.algorithm_core import Algorithm
     algorithm = Algorithm()
 
+    # Load configuration from options.json
+    import json
+    import os
+    try:
+        options_path = os.path.join(os.path.dirname(__file__), '..', 'options.json')
+        with open(options_path, 'r') as f:
+            options = json.load(f)
+
+        # Apply algorithm configuration if present
+        if 'algorithm' in options:
+            algo_config = options['algorithm']
+
+            # Load FedAvg mode parameters
+            algorithm.set_fedavg_mode(algo_config.get('fedavg_mode', False))
+            algorithm.set_static_server_id(algo_config.get('static_server_id', 0))
+
+            # Load server selection parameters
+            if 'server_selection' in algo_config:
+                server_selection = algo_config['server_selection']
+                algorithm.set_connect_to_all_satellites(
+                    server_selection.get('connect_to_all_satellites', False)
+                )
+                algorithm.set_max_lookahead(
+                    server_selection.get('max_lookahead', 20)
+                )
+                algorithm.set_minimum_connected_satellites(
+                    server_selection.get('minimum_connected_satellites', 5)
+                )
+
+            print(f"Loaded algorithm config: fedavg_mode={algorithm.fedavg_mode}, "
+                  f"static_server_id={algorithm.static_server_id}, "
+                  f"connect_to_all={algorithm.connect_to_all_satellites}, "
+                  f"max_lookahead={algorithm.max_lookahead}, min_satellites={algorithm.minimum_connected_satellites}")
+    except Exception as e:
+        print(f"Warning: Could not load algorithm config from options.json: {e}")
+        print("  Using default values")
+
     # Create handler with the algorithm
     handler = AlgorithmHandler(algorithm)
 

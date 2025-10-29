@@ -1,6 +1,6 @@
 """
 Filename: federated_learning.py
-Description: Manage FLOWER Federated Learning epochs.
+Description: Manage tensorflow Federated Learning epochs.
 Author: Joshua Zimmerman
 Date: 2025-05-07
 Version: 1.0
@@ -119,7 +119,8 @@ class FederatedLearning:
         self.model_eval_module = None
         self.selected_model_name = None
         self.model_evaluation_history = []
-        self.current_dataset = None
+        self.participation_log = []
+        self.trained_clients_per_round = {}
         
         # Initialize model evaluation module if enabled
         if self.model_evaluation_enabled:
@@ -660,18 +661,8 @@ class FederatedLearning:
 
     @staticmethod
     def parse_flam_file(flam_path):
-        """
-        Parse the FLAM CSV file and yield a dict for each timestep:
-        {
-            'timestep': int,
-            'round': int,
-            'target_node': int,
-            'phase': str,
-            'connected_sats': List[int],
-            'missing_sats': List[int],
-            'adjacency': List[List[int]]
-        }
-        """
+        import ast
+        current_round = 1
         with open(flam_path, 'r') as f:
             lines = f.readlines()
 
@@ -679,26 +670,49 @@ class FederatedLearning:
         while i < len(lines):
             line = lines[i].strip()
             if line.startswith("Time:"):
-                # Parse header
                 header = line
                 timestep = int(re.search(r'Timestep: (\d+)', header).group(1))
-                round_num = int(re.search(r'Round: (\d+)', header).group(1))
-                target_node = int(re.search(r'Target Node: (\d+)', header).group(1))
+                # Prefer explicit Round field from the FLAM header if present
+                round_match = re.search(r'Round: (\d+)', header)
+                if round_match:
+                    parsed_round = int(round_match.group(1))
+                else:
+                    parsed_round = current_round
+
                 phase = re.search(r'Phase: ([A-Z]+)', header).group(1)
-                connected_sats = eval(re.search(r'Connected Sats: (\[.*?\])', header).group(1))
-                missing_sats = eval(re.search(r'Missing Sats: (\[.*?\])', header).group(1))
+                aggregation_server = re.search(r'Aggregation Server: ([\w\d]+)', header)
+                aggregation_server = int(aggregation_server.group(1)) if aggregation_server and aggregation_server.group(1) != "TBD" else None
+                redistribution_server = re.search(r'Redistribution Server: ([\w\d]+)', header)
+                redistribution_server = redistribution_server.group(1)
+                redistribution_server = int(redistribution_server) if redistribution_server != "TBD" else None
+                target_node = int(re.search(r'Target Node: (\d+)', header).group(1))
+                phase_length = int(re.search(r'Phase Length: (\d+)', header).group(1))
+                timestep_in_phase = int(re.search(r'Timestep in Phase: (\d+)', header).group(1))
+                connected_sats = ast.literal_eval(re.search(r'Connected Sats: (\[.*?\])', header).group(1))
+                missing_sats = ast.literal_eval(re.search(r'Missing Sats: (\[.*?\])', header).group(1))
+                target_sats = ast.literal_eval(re.search(r'Target Sats: (\[.*?\])', header).group(1))
+                phase_complete = re.search(r'Phase Complete: (\w+)', header).group(1) == "True"
                 adjacency = []
                 for j in range(i+1, i+1+8):  # 8 clients/nodes
                     adjacency.append([int(x) for x in lines[j].strip().split(',')])
                 yield {
                     'timestep': timestep,
-                    'round': round_num,
-                    'target_node': target_node,
+                    'round': parsed_round,
                     'phase': phase,
+                    'aggregation_server': aggregation_server,
+                    'redistribution_server': redistribution_server,
+                    'target_node': target_node,
+                    'phase_length': phase_length,
+                    'timestep_in_phase': timestep_in_phase,
                     'connected_sats': connected_sats,
                     'missing_sats': missing_sats,
+                    'target_sats': target_sats,
+                    'phase_complete': phase_complete,
                     'adjacency': adjacency
                 }
+                # If FLAM didn't include an explicit Round field, increment current_round when phase completes
+                if not round_match and phase_complete:
+                    current_round += 1
                 i += 8
             i += 1
 
@@ -761,52 +775,127 @@ class FederatedLearning:
 
         for flam_entry in flam_schedule:
             print(f"\n--- Timestep {flam_entry['timestep']} | Round {flam_entry['round']} ---")
-            ps_client = flam_entry['target_node']
             phase = flam_entry['phase']
+            aggregation_server = flam_entry['aggregation_server']
+            redistribution_server = flam_entry['redistribution_server']
+            target_node = flam_entry['target_node']
             in_range_clients = flam_entry['connected_sats']
             out_of_range_clients = flam_entry['missing_sats']
 
-            print(f"Parameter Server for this timestep: Client {ps_client+1}")
+            round_num = flam_entry['round']
+            if round_num not in fl_instance.trained_clients_per_round:
+                fl_instance.trained_clients_per_round[round_num] = set()
+
             print(f"Phase: {phase}")
+            print(f"Aggregation Server: {aggregation_server}")
+            print(f"Redistribution Server: {redistribution_server}")
+            print(f"Target Node: {target_node}")
             print(f"In-range clients: {[f'Client {i+1}' for i in in_range_clients]}")
-            print(f"Out-of-range clients: {[f'Client {i+1}' for i in out_of_range_clients]}")
-            print(f"Parameter Server (Client {ps_client+1}) will aggregate this timestep.")
+            print(f"Waiting to connect: {[f'Client {i+1}' for i in out_of_range_clients]}")
+            print(f"Phase Complete: {flam_entry['phase_complete']}")
 
             # Distribute global model to all clients
             global_state = server.get_global_model().state_dict()
             for client in clients:
                 client.update_model(global_state)
 
-            # Only train during TRAINING phase
             round_accuracies_this = []
+
+            # Default avg_acc for all phases
+            avg_acc = None
+
             if phase == "TRANSMITTING":
+                # Only in-range clients train and send updates to aggregation server
                 for client_id, client in enumerate(clients):
                     if client_id in in_range_clients:
-                        state_dict, acc = client.train()
-                        server.receive_update(state_dict)
-                        round_accuracies_this.append(acc)
-                        print(f"Client {client.client_id+1} accuracy: {acc:.2%}")
+                        if client_id in self.trained_clients_per_round[round_num]:
+                            print(f"Client {client.client_id+1} already trained in round {round_num}, skipping.")
+                        else:
+                            state_dict, acc = client.train()
+                            server.receive_update(state_dict)
+                            round_accuracies_this.append(acc)
+                            self.trained_clients_per_round[round_num].add(client_id)
+                            print(f"Client {client.client_id+1} accuracy: {acc:.2%}")
                     else:
                         print(f"Client {client.client_id+1} skipped (out of range)")
-
-                # Server aggregates updates from in-range clients
+                # Aggregate updates
                 server.aggregate()
                 if round_accuracies_this:
                     avg_acc = sum(round_accuracies_this) / len(round_accuracies_this)
                     print(f"Timestep {flam_entry['timestep']} average in-range client accuracy: {avg_acc:.2%}")
                 else:
                     print(f"Timestep {flam_entry['timestep']}: No clients in range to train.")
-
                 self.round_times[f"timestep_{flam_entry['timestep']}"] = time.time() - total_start_time
                 round_accuracies.append(avg_acc if round_accuracies_this else 0)
+
+            elif phase == "CHECK":
+                # Transfer global model to redistribution server (no training, just transfer)
+                if redistribution_server is not None:
+                    print(f"Transferring global model from Aggregation Server {aggregation_server} to Redistribution Server {redistribution_server}")
+                else:
+                    print("Redistribution server not yet determined.")
+
+            elif phase == "REDISTRIBUTION":
+                # Distribute global model from redistribution server to all clients
+                print(f"Redistributing global model from Redistribution Server {redistribution_server} to all clients.")
+                for client_id, client in enumerate(clients):
+                    if client_id in in_range_clients:
+                        client.update_model(server.get_global_model().state_dict())
+                        print(f"Client {client.client_id+1} received global model.")
+                    else:
+                        print(f"Client {client.client_id+1} skipped (out of range)")
+
+            # After processing each flam_entry
+            is_last_phase_of_round = flam_entry.get("phase_complete", False)
+            self.participation_log.append({
+                "timestep": flam_entry['timestep'],
+                "round": flam_entry['round'],
+                "phase": phase,
+                "aggregation_server": aggregation_server,
+                "redistribution_server": redistribution_server,
+                "in_range_clients": in_range_clients,
+                "out_of_range_clients": out_of_range_clients,
+                "accuracy": avg_acc if phase == "TRANSMITTING" and round_accuracies_this else None,
+                "round_complete": is_last_phase_of_round
+            })
 
         self.total_training_time = time.time() - total_start_time
         self.round_accuracies = round_accuracies
 
+
         print(f"\nFederated learning process completed in {self.total_training_time:.2f} seconds.")
         print("\nTimestep-wise processing times and accuracies:")
+
+        # Build a mapping from timestep -> logged accuracy (may be None or 0)
+        timestep_to_accuracy = {entry["timestep"]: entry.get("accuracy") for entry in self.participation_log}
+
         for idx, round_time in self.round_times.items():
-            print(f"{idx}: {round_time:.2f} seconds, Accuracy: {round_accuracies[int(idx.split('_')[1]) - 1]:.2%}")
+            # Extract timestep number from the key "timestep_X"
+            timestep_num = int(idx.split('_')[1])
+
+            # Prefer the explicitly logged accuracy for that timestep if present
+            acc = timestep_to_accuracy.get(timestep_num, None)
+
+            # If no accuracy or a 0 (skipped), find the most recent prior non-zero accuracy
+            if acc is None or acc == 0:
+                last_acc = None
+                # iterate participation_log in reverse to find latest non-zero accuracy <= timestep_num
+                for entry in reversed(self.participation_log):
+                    t = entry.get("timestep")
+                    if t is None or t > timestep_num:
+                        continue
+                    a = entry.get("accuracy")
+                    if a is not None and a != 0:
+                        last_acc = a
+                        break
+                if last_acc is not None:
+                    acc_display = f"{last_acc:.2%}"
+                else:
+                    acc_display = "N/A"
+            else:
+                acc_display = f"{acc:.2%}"
+
+            print(f"{idx}: {round_time:.2f} seconds, Accuracy: {acc_display}")
         print(f"Average timestep time: {self.total_training_time/len(self.round_times):.2f} seconds")
 
 if __name__ == "__main__":
@@ -814,8 +903,8 @@ if __name__ == "__main__":
     # Default customization values
     num_rounds = 5
     num_clients = 8
-    model_type = "SimpleCNN"
-    data_set = "MNIST"
+    model_type = "EfficientNetB0"
+    data_set = "EuroSAT"
 
     # Create timestamped run directory under results_from_output
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -837,7 +926,44 @@ if __name__ == "__main__":
     fl_instance.run(flam_path=flam_path)
 
     # Evaluate the model
-    output = FLOutput()
+    from torchvision import datasets, transforms
+
+    if data_set == "MNIST":
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
+        test_dataset = datasets.MNIST(
+            root=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'MNIST'),
+            train=False,
+            download=True,
+            transform=transform
+        )
+    elif data_set == "EuroSAT":
+        transform = transforms.Compose([
+            transforms.Resize((64, 64)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.3443, 0.3804, 0.4086], std=[0.1814, 0.1535, 0.1311])
+        ])
+        test_dataset = datasets.EuroSAT(
+            root=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'EuroSAT'),
+            download=True,
+            transform=transform
+        )
+    else:
+        # Default to MNIST
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
+        test_dataset = datasets.MNIST(
+            root=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'MNIST'),
+            train=False,
+            download=True,
+            transform=transform
+        )
+
+    output = FLOutput(test_dataset=test_dataset)
     output.evaluate_model(fl_instance.global_model, fl_instance.total_training_time)
 
     # Add timing and accuracy metrics
@@ -847,6 +973,7 @@ if __name__ == "__main__":
 
     # Add round accuracies explicitly
     output.add_metric("round_accuracies", fl_instance.round_accuracies)
+    output.add_metric("participation_log", fl_instance.participation_log)
 
     # Save results into this run folder
     log_file = os.path.join(run_dir, f"results_{timestamp}.log")
@@ -868,3 +995,33 @@ if __name__ == "__main__":
     viz = FLVisualization(results_dir=run_dir)
     viz.visualize_from_json(metrics_file)
     print(f"Visualizations saved under {run_dir}")
+
+    # Ask the user if they want to generate the animations now
+    try:
+        choice = input("\nGenerate animations for this run? (1 = Yes, 2 = No) : ").strip()
+    except KeyboardInterrupt:
+        choice = "2"
+
+    if choice == "1":
+        print("Generating animations...")
+        try:
+            acc_gif = os.path.join(run_dir, "accuracy_progress.gif")
+            part_gif = os.path.join(run_dir, "client_participation.gif")
+            FLOutput.animate_accuracy_progress(metrics_file, save_path=acc_gif)
+            FLOutput.animate_client_participation(metrics_file, save_path=part_gif)
+            print(f"Animations saved to {run_dir}")
+        except Exception as e:
+            print(f"Failed to generate animations: {e}")
+
+    # Ask the user if they want to create a comparison dashboard (opens new prompt)
+    try:
+        dash_choice = input("\nCreate comparison dashboard now? (1 = Yes, 2 = No) : ").strip()
+    except KeyboardInterrupt:
+        dash_choice = "2"
+
+    if dash_choice == "1":
+        try:
+            from federated_learning.dashboard_compare import run_dashboard_creator
+            run_dashboard_creator()
+        except Exception as e:
+            print(f"Failed to create/open dashboard: {e}")

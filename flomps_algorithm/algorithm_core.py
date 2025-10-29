@@ -4,7 +4,7 @@ Description: Manage FLOMPS algorithm processes with three-phase round execution.
 Initial Creator: Elysia Guglielmo (System Architect)
 Contributors: Yuganya Perumal, Gagandeep Singh
 Date: 2024-07-31
-Version: 2.0
+Version: 2.1
 Python Version: 3.12
 
 Changelog:
@@ -23,6 +23,13 @@ Changelog:
 - 2025-10-03: Implemented three-phase round structure (TRANSMITTING → CHECK → REDISTRIBUTION)
 - 2025-10-03: Added find_best_redistribution_server() with two-hop optimization (A+B)
 - 2025-10-03: Fixed phase_length to update retroactively after phase completion
+- 2025-10-10: Added FedAvg mode with static server configuration (fedavg_mode, static_server_id)
+- 2025-10-10: Implemented two-phase FedAvg execution (TRANSMITTING → REDISTRIBUTION, no CHECK phase)
+- 2025-10-10: Added configurable server selection parameters (connect_to_all_satellites, max_lookahead, minimum_connected_satellites)
+- 2025-10-10: Enhanced fallback to search ALL remaining timesteps and select most connected server
+- 2025-10-10: Removed artificial timeouts from TRANSMITTING and REDISTRIBUTION phases
+
+
 
 Three-Phase Algorithm:
 1. TRANSMITTING: Clients send local models to aggregation server (uplink)
@@ -81,6 +88,15 @@ class Algorithm():
         self.aggregation_server = None
         self.redistribution_server = None
 
+        # Server selection parameters
+        self.connect_to_all_satellites = False
+        self.max_lookahead = 20
+        self.minimum_connected_satellites = 5
+
+        # FedAvg mode parameters
+        self.fedavg_mode = False
+        self.static_server_id = 0
+
     def set_satellite_names(self, satellite_names):
         self.satellite_names = satellite_names
         self.selection_counts = npy.zeros(len(satellite_names))
@@ -96,6 +112,21 @@ class Algorithm():
 
     def set_output_to_file(self, output_to_file):
         self.output_to_file = output_to_file
+
+    def set_connect_to_all_satellites(self, connect_to_all_satellites):
+        self.connect_to_all_satellites = connect_to_all_satellites
+
+    def set_max_lookahead(self, max_lookahead):
+        self.max_lookahead = max_lookahead
+
+    def set_minimum_connected_satellites(self, minimum_connected_satellites):
+        self.minimum_connected_satellites = minimum_connected_satellites
+
+    def set_fedavg_mode(self, fedavg_mode):
+        self.fedavg_mode = fedavg_mode
+
+    def set_static_server_id(self, static_server_id):
+        self.static_server_id = static_server_id
 
     def get_algorithm_output(self):
         return self.algorithm_output_data
@@ -178,68 +209,185 @@ class Algorithm():
     def find_best_server_for_round(self, start_matrix_index=0):
         """
         Find the satellite with the best connectivity performance.
-        1. Analyze all satellites first
-        2. Pick the one with highest max connections
-        3. If tied, pick the fastest
-        4. If still tied, use load balancing
+        Uses configurable criteria:
+        - connect_to_all_satellites: If True, server must connect to all satellites
+        - minimum_connected_satellites: Minimum number of satellites to connect to
+        - max_lookahead: Maximum timesteps to look ahead
+
+        Selection criteria:
+        1. Must meet connectivity requirements (all satellites OR minimum satellites)
+        2. Must meet connectivity within max_lookahead timesteps
+        3. Among valid candidates: highest max connections
+        4. If tied: fastest to achieve max connections
+        5. If still tied: load balancing
         """
         if start_matrix_index >= len(self.adjacency_matrices):
-            return 0, 5  # Default fallback
+            return 0, 5, {'max_connections': 0, 'connected_satellites': set()}  # Default fallback
 
-        # Step 1: Analyze all satellites
-        satellite_analysis = self.analyze_all_satellites(start_matrix_index)
+        num_satellites = len(self.satellite_names)
 
-        # Step 2: Find the best performance
-        best_server = 0
-        best_analysis = satellite_analysis[0]
+        # Determine required connections based on settings
+        if self.connect_to_all_satellites:
+            required_connections = num_satellites - 1  # All satellites except self
+        else:
+            required_connections = self.minimum_connected_satellites
 
         print(f"\n=== Server Selection for Round {self.round_number} ===")
+        print(f"Configuration: connect_to_all={self.connect_to_all_satellites}, "
+              f"min_satellites={self.minimum_connected_satellites}, max_lookahead={self.max_lookahead}")
+        print(f"Required connections: {required_connections}/{num_satellites-1}")
 
+        # Step 1: Analyze all satellites
+        satellite_analysis = self.analyze_all_satellites(start_matrix_index, self.max_lookahead)
+
+        # Step 2: Filter satellites that meet requirements
+        valid_candidates = {}
         for sat_idx, analysis in satellite_analysis.items():
+            # Check if satellite meets minimum connectivity requirement
+            if analysis['max_connections'] < required_connections:
+                print(f"  ✗ Satellite {sat_idx}: Only {analysis['max_connections']}/{required_connections} connections (insufficient)")
+                continue
+
+            # Check if satellite achieves required connections within max_lookahead
+            # Need to find when it reaches required_connections
+            timestep_to_required = None
+            for timeline_entry in analysis['connection_timeline']:
+                if timeline_entry['cumulative_count'] >= required_connections:
+                    timestep_to_required = timeline_entry['timestep']
+                    break
+
+            if timestep_to_required is None or timestep_to_required > self.max_lookahead:
+                print(f"  ✗ Satellite {sat_idx}: Doesn't reach {required_connections} connections within {self.max_lookahead} timesteps")
+                continue
+
+            valid_candidates[sat_idx] = {
+                'analysis': analysis,
+                'timestep_to_required': timestep_to_required
+            }
+            print(f"  ✓ Satellite {sat_idx}: Valid candidate - {analysis['max_connections']}/{num_satellites-1} connections in {timestep_to_required} timesteps")
+
+        # Step 3: If no valid candidates, search through ALL remaining timesteps
+        if not valid_candidates:
+            # Calculate total remaining timesteps
+            total_remaining = len(self.adjacency_matrices) - start_matrix_index
+            print(f"\n⚠ No satellites meet criteria within {self.max_lookahead} timesteps")
+            print(f"   Searching through all remaining {total_remaining} timesteps...")
+
+            satellite_analysis = self.analyze_all_satellites(start_matrix_index, total_remaining)
+
+            for sat_idx, analysis in satellite_analysis.items():
+                if analysis['max_connections'] >= required_connections:
+                    timestep_to_required = None
+                    for timeline_entry in analysis['connection_timeline']:
+                        if timeline_entry['cumulative_count'] >= required_connections:
+                            timestep_to_required = timeline_entry['timestep']
+                            break
+
+                    if timestep_to_required is not None:
+                        valid_candidates[sat_idx] = {
+                            'analysis': analysis,
+                            'timestep_to_required': timestep_to_required
+                        }
+                        print(f"  ✓ Satellite {sat_idx}: Found - {analysis['max_connections']}/{num_satellites-1} connections in {timestep_to_required} timesteps")
+
+        # Step 4: If still no valid candidates, declare it impossible
+        if not valid_candidates:
+            if self.connect_to_all_satellites:
+                print(f"\n⚠ IMPOSSIBLE: No satellite can connect to all {num_satellites-1} satellites within the given {len(self.adjacency_matrices) - start_matrix_index} timesteps")
+            else:
+                print(f"\n⚠ IMPOSSIBLE: No satellite can connect to {required_connections} satellites within the given {len(self.adjacency_matrices) - start_matrix_index} timesteps")
+
+            print(f"   Falling back to best available satellite...")
+
+            best_server = 0
+            best_analysis = satellite_analysis[0]
+            for sat_idx, analysis in satellite_analysis.items():
+                if analysis['max_connections'] > best_analysis['max_connections']:
+                    best_server = sat_idx
+                    best_analysis = analysis
+
+            self.selection_counts[best_server] += 1
+            print(f"\n✓ Selected Server {best_server} ({self.satellite_names[best_server]}) (fallback)")
+            print(f"  Will achieve {best_analysis['max_connections']}/{num_satellites-1} connections in {best_analysis['timestamps_to_max']} timestamps")
+            return best_server, best_analysis['timestamps_to_max'], best_analysis
+
+        # Step 5: Select best from valid candidates
+        best_server = None
+        best_candidate = None
+
+        for sat_idx, candidate in valid_candidates.items():
+            analysis = candidate['analysis']
+            timestep_to_required = candidate['timestep_to_required']
+
+            if best_server is None:
+                best_server = sat_idx
+                best_candidate = candidate
+                continue
+
             is_better = False
             reason = ""
 
             # Primary criteria: Higher max connections
-            if analysis['max_connections'] > best_analysis['max_connections']:
+            if analysis['max_connections'] > best_candidate['analysis']['max_connections']:
                 is_better = True
-                reason = f"Higher max connections ({analysis['max_connections']} vs {best_analysis['max_connections']})"
+                reason = f"Higher max connections ({analysis['max_connections']} vs {best_candidate['analysis']['max_connections']})"
 
-            # Secondary criteria: Same max connections but faster
-            elif (analysis['max_connections'] == best_analysis['max_connections'] and
-                analysis['timestamps_to_max'] < best_analysis['timestamps_to_max']):
+            # Secondary criteria: Same max connections but faster to reach required
+            elif (analysis['max_connections'] == best_candidate['analysis']['max_connections'] and
+                  timestep_to_required < best_candidate['timestep_to_required']):
                 is_better = True
-                reason = f"Same max connections ({analysis['max_connections']}) but faster ({analysis['timestamps_to_max']} vs {best_analysis['timestamps_to_max']} timestamps)"
+                reason = f"Same max connections but faster to required ({timestep_to_required} vs {best_candidate['timestep_to_required']} timestamps)"
 
-            # Tertiary criteria: Load balancing (less frequently selected)
-            elif (analysis['max_connections'] == best_analysis['max_connections'] and
-                analysis['timestamps_to_max'] == best_analysis['timestamps_to_max'] and
-                self.selection_counts[sat_idx] < self.selection_counts[best_server]):
+            # Tertiary criteria: Load balancing
+            elif (analysis['max_connections'] == best_candidate['analysis']['max_connections'] and
+                  timestep_to_required == best_candidate['timestep_to_required'] and
+                  self.selection_counts[sat_idx] < self.selection_counts[best_server]):
                 is_better = True
                 reason = f"Load balancing (selected {self.selection_counts[sat_idx]} vs {self.selection_counts[best_server]} times)"
 
             if is_better:
                 best_server = sat_idx
-                best_analysis = analysis
+                best_candidate = candidate
                 print(f"  New best: Satellite {sat_idx} ({self.satellite_names[sat_idx]}) - {reason}")
 
         # Update selection count
         self.selection_counts[best_server] += 1
+        best_analysis = best_candidate['analysis']
 
         print(f"\n✓ Selected Server {best_server} ({self.satellite_names[best_server]})")
-        print(f"  Will achieve {best_analysis['max_connections']}/{len(self.satellite_names)-1} connections in {best_analysis['timestamps_to_max']} timestamps")
+        print(f"  Will achieve {best_analysis['max_connections']}/{num_satellites-1} connections")
+        print(f"  Reaches {required_connections} required connections in {best_candidate['timestep_to_required']} timestamps")
         print(f"  Target satellites: {sorted(list(best_analysis['connected_satellites']))}")
 
         return best_server, best_analysis['timestamps_to_max'], best_analysis
 
-    def find_best_redistribution_server(self, aggregation_server, start_matrix_index, max_lookahead=20):
+    def find_best_redistribution_server(self, aggregation_server, start_matrix_index, max_lookahead=None):
         """
         Find the best server for redistribution using two-hop optimization.
+        Uses configurable criteria:
+        - connect_to_all_satellites: If True, server must connect to all satellites
+        - minimum_connected_satellites: Minimum number of satellites to connect to
+        - max_lookahead: Maximum timesteps to look ahead
+
         Calculates: (aggregation_server -> candidate) + (candidate -> all clients)
         Returns: (redistribution_server, time_to_reach_redistribution_server, redistribution_analysis)
         """
+        # Use instance max_lookahead if not provided
+        if max_lookahead is None:
+            max_lookahead = self.max_lookahead
+
         num_satellites = len(self.satellite_names)
 
+        # Determine required connections based on settings
+        if self.connect_to_all_satellites:
+            required_connections = num_satellites - 1  # All satellites except self
+        else:
+            required_connections = self.minimum_connected_satellites
+
         print(f"\n=== Finding Redistribution Server (from Aggregation Server {aggregation_server}) ===")
+        print(f"Configuration: connect_to_all={self.connect_to_all_satellites}, "
+              f"min_satellites={self.minimum_connected_satellites}, max_lookahead={max_lookahead}")
+        print(f"Required connections: {required_connections}/{num_satellites-1}")
 
         # Step 1: Analyze path from aggregation_server to each candidate
         path_to_candidates = {}
@@ -286,33 +434,159 @@ class Algorithm():
             # Analyze from the timestep when candidate receives the model
             candidate_start_index = start_matrix_index + time_a
 
-            # Analyze candidate's ability to redistribute to all clients
+            # Analyze candidate's ability to redistribute to clients
             candidate_analysis = self.analyze_single_satellite(candidate_idx, candidate_start_index, max_lookahead)
 
-            time_b = candidate_analysis['timestamps_to_max']
+            # Check if candidate meets minimum connectivity requirement
+            if candidate_analysis['max_connections'] < required_connections:
+                print(f"  ✗ Candidate {candidate_idx}: Only {candidate_analysis['max_connections']}/{required_connections} connections (insufficient)")
+                continue
+
+            # Find when it reaches required_connections
+            timestep_to_required = None
+            for timeline_entry in candidate_analysis['connection_timeline']:
+                if timeline_entry['cumulative_count'] >= required_connections:
+                    timestep_to_required = timeline_entry['timestep']
+                    break
+
+            if timestep_to_required is None or timestep_to_required > max_lookahead:
+                print(f"  ✗ Candidate {candidate_idx}: Doesn't reach {required_connections} connections within {max_lookahead} timesteps")
+                continue
+
+            time_b = timestep_to_required
             total_time = time_a + time_b
 
             redistribution_analysis[candidate_idx] = {
                 'time_a': time_a,  # aggregation -> candidate
-                'time_b': time_b,  # candidate -> all clients
+                'time_b': time_b,  # candidate -> required connections
                 'total_time': total_time,
                 'max_connections': candidate_analysis['max_connections'],
                 'connected_satellites': candidate_analysis['connected_satellites']
             }
 
-            print(f"Candidate {candidate_idx} ({self.satellite_names[candidate_idx]}): "
+            print(f"  ✓ Candidate {candidate_idx} ({self.satellite_names[candidate_idx]}): "
                   f"A={time_a} + B={time_b} = {total_time} timesteps, "
                   f"reaches {candidate_analysis['max_connections']}/{num_satellites-1} clients")
 
-        # Step 3: Select best redistribution server
+        # Step 3: If no valid candidates, search through ALL remaining timesteps
+        if not redistribution_analysis:
+            total_remaining = len(self.adjacency_matrices) - start_matrix_index
+            print(f"\n⚠ No candidates meet criteria within {max_lookahead} timesteps")
+            print(f"   Searching through all remaining {total_remaining} timesteps...")
+
+            # Re-analyze paths with all remaining timesteps
+            for candidate_idx in range(num_satellites):
+                if candidate_idx == aggregation_server:
+                    path_to_candidates[candidate_idx] = {
+                        'reachable': True,
+                        'timesteps': 0
+                    }
+                    continue
+
+                connected_to_candidate = False
+                timesteps_to_candidate = total_remaining
+
+                for timesteps_ahead in range(total_remaining):
+                    matrix_idx = start_matrix_index + timesteps_ahead
+                    if matrix_idx >= len(self.adjacency_matrices):
+                        break
+
+                    _, matrix = self.adjacency_matrices[matrix_idx]
+
+                    if matrix[aggregation_server][candidate_idx] == 1:
+                        connected_to_candidate = True
+                        timesteps_to_candidate = timesteps_ahead + 1
+                        break
+
+                path_to_candidates[candidate_idx] = {
+                    'reachable': connected_to_candidate,
+                    'timesteps': timesteps_to_candidate
+                }
+
+            # Re-analyze redistribution capability
+            for candidate_idx in range(num_satellites):
+                if not path_to_candidates[candidate_idx]['reachable']:
+                    continue
+
+                time_a = path_to_candidates[candidate_idx]['timesteps']
+                candidate_start_index = start_matrix_index + time_a
+                candidate_analysis = self.analyze_single_satellite(candidate_idx, candidate_start_index, total_remaining)
+
+                if candidate_analysis['max_connections'] >= required_connections:
+                    timestep_to_required = None
+                    for timeline_entry in candidate_analysis['connection_timeline']:
+                        if timeline_entry['cumulative_count'] >= required_connections:
+                            timestep_to_required = timeline_entry['timestep']
+                            break
+
+                    if timestep_to_required is not None:
+                        time_b = timestep_to_required
+                        total_time = time_a + time_b
+
+                        redistribution_analysis[candidate_idx] = {
+                            'time_a': time_a,
+                            'time_b': time_b,
+                            'total_time': total_time,
+                            'max_connections': candidate_analysis['max_connections'],
+                            'connected_satellites': candidate_analysis['connected_satellites']
+                        }
+                        print(f"  ✓ Candidate {candidate_idx}: Found - A={time_a} + B={time_b} = {total_time} timesteps")
+
+        # Step 4: If still no valid candidates, select the one with most connections
+        if not redistribution_analysis:
+            if self.connect_to_all_satellites:
+                print(f"\n⚠ IMPOSSIBLE: No redistribution server can reach all {num_satellites-1} satellites within the given {len(self.adjacency_matrices) - start_matrix_index} timesteps")
+            else:
+                print(f"\n⚠ IMPOSSIBLE: No redistribution server can reach {required_connections} satellites within the given {len(self.adjacency_matrices) - start_matrix_index} timesteps")
+
+            print(f"   Selecting server with most connections...")
+
+            # Analyze all reachable candidates without requirement filter
+            best_redist_server = aggregation_server
+            best_max_connections = 0
+            best_time_a = 0
+            best_time_b = 0
+            best_connected_sats = set()
+
+            for candidate_idx in range(num_satellites):
+                if not path_to_candidates[candidate_idx]['reachable']:
+                    continue
+
+                time_a = path_to_candidates[candidate_idx]['timesteps']
+                candidate_start_index = start_matrix_index + time_a
+                candidate_analysis = self.analyze_single_satellite(candidate_idx, candidate_start_index, total_remaining)
+
+                # Find fastest time to reach maximum connections
+                timestep_to_max = candidate_analysis['timestamps_to_max']
+                max_connections = candidate_analysis['max_connections']
+
+                # Select if this candidate has more connections
+                if max_connections > best_max_connections:
+                    best_redist_server = candidate_idx
+                    best_max_connections = max_connections
+                    best_time_a = time_a
+                    best_time_b = timestep_to_max
+                    best_connected_sats = candidate_analysis['connected_satellites']
+                    print(f"  ✓ Candidate {candidate_idx}: Best so far - {max_connections}/{num_satellites-1} connections")
+
+            print(f"\n✓ Selected Redistribution Server {best_redist_server} ({self.satellite_names[best_redist_server]}) (best available)")
+            print(f"  Time A (aggregation→redistribution): {best_time_a} timestamps")
+            print(f"  Time B (redistribution→max clients): {best_time_b} timestamps")
+            print(f"  Total time: {best_time_a + best_time_b} timestamps")
+            print(f"  Will reach {best_max_connections}/{num_satellites-1} clients")
+
+            return best_redist_server, best_time_a, {
+                'time_a': best_time_a,
+                'time_b': best_time_b,
+                'total_time': best_time_a + best_time_b,
+                'max_connections': best_max_connections,
+                'connected_satellites': best_connected_sats
+            }
+
+        # Step 5: Select best redistribution server
         # Primary: minimum total_time
         # Secondary: max_connections (in case of tie)
         # Tertiary: random selection (for ties)
-
-        if not redistribution_analysis:
-            # Fallback to aggregation_server if no candidates found
-            print(f"⚠ No reachable candidates, using aggregation_server {aggregation_server}")
-            return aggregation_server, 0, {'max_connections': 0, 'connected_satellites': set()}
 
         candidates_by_time = {}
         for candidate_idx, analysis in redistribution_analysis.items():
@@ -335,7 +609,7 @@ class Algorithm():
 
         print(f"\n✓ Selected Redistribution Server {best_server_idx} ({self.satellite_names[best_server_idx]})")
         print(f"  Time A (aggregation→redistribution): {best_analysis['time_a']} timestamps")
-        print(f"  Time B (redistribution→clients): {best_analysis['time_b']} timestamps")
+        print(f"  Time B (redistribution→required clients): {best_analysis['time_b']} timestamps")
         print(f"  Total time: {best_analysis['total_time']} timestamps")
         print(f"  Will reach {best_analysis['max_connections']}/{num_satellites-1} clients")
 
@@ -352,8 +626,164 @@ class Algorithm():
 
         while current_matrix_index < len(adjacency_matrices):
             print(f"\n{'='*80}")
-            print(f"ROUND {self.round_number} - THREE PHASE EXECUTION")
+            if self.fedavg_mode:
+                print(f"ROUND {self.round_number} - FEDAVG MODE (STATIC SERVER)")
+            else:
+                print(f"ROUND {self.round_number} - THREE PHASE EXECUTION")
             print(f"{'='*80}")
+
+            # ============================================================
+            # FedAvg Mode: Static Server (Two-Phase)
+            # ============================================================
+            if self.fedavg_mode:
+                # Use static server for both aggregation and redistribution
+                aggregation_server = self.static_server_id
+                redistribution_server = self.static_server_id
+                self.aggregation_server = aggregation_server
+                self.redistribution_server = redistribution_server
+
+                print(f"\nUsing Static Server {aggregation_server} ({self.satellite_names[aggregation_server]}) for FedAvg")
+
+                # Phase 1: TRANSMITTING (Aggregation to static server)
+                print(f"\n### PHASE 1: TRANSMITTING (Model Aggregation) ###")
+                print(f"Static Aggregation Server {aggregation_server}")
+
+                phase_start_index = current_matrix_index
+                timestep_in_phase = 0
+                target_satellites = set(range(num_satellites)) - {aggregation_server}
+                connected_satellites = set()
+                phase_complete = False
+
+                print(f"Aggregation Server {aggregation_server} targeting {len(target_satellites)} satellites: {sorted(list(target_satellites))}")
+
+                while current_matrix_index < len(adjacency_matrices) and not phase_complete:
+                    timestep_in_phase += 1
+                    time_stamp, matrix = adjacency_matrices[current_matrix_index]
+
+                    # Check connections
+                    current_timestamp_connections = set()
+                    for target_sat in range(num_satellites):
+                        if target_sat != aggregation_server and matrix[aggregation_server][target_sat] == 1:
+                            current_timestamp_connections.add(target_sat)
+                            connected_satellites.add(target_sat)
+
+                    # Check completion (try to connect to all, but proceed with best available)
+                    if connected_satellites >= target_satellites:
+                        phase_complete = True
+                        print(f"  ✓ TRANSMITTING complete at timestep {timestep_in_phase}")
+                        print(f"    Aggregated models from: {sorted(list(connected_satellites))}")
+                    else:
+                        print(f"  → Timestep {timestep_in_phase}: {len(connected_satellites)}/{len(target_satellites)} models aggregated")
+
+                    # Store output
+                    algorithm_output[time_stamp] = {
+                        'satellite_count': num_satellites,
+                        'satellite_names': self.satellite_names,
+                        'selected_satellite': self.satellite_names[aggregation_server],
+                        'aggregator_id': aggregation_server,
+                        'redistribution_id': redistribution_server,
+                        'federatedlearning_adjacencymatrix': matrix,
+                        'aggregator_flag': True,
+                        'round_number': self.round_number,
+                        'phase': "TRANSMITTING",
+                        'target_node': aggregation_server,
+                        'phase_length': timestep_in_phase,
+                        'timestep_in_phase': timestep_in_phase,
+                        'server_connections_current': len(current_timestamp_connections),
+                        'server_connections_cumulative': len(connected_satellites),
+                        'target_connections': len(target_satellites),
+                        'connected_satellites': sorted(list(connected_satellites)),
+                        'missing_satellites': sorted(list(target_satellites - connected_satellites)),
+                        'target_satellites': sorted(list(target_satellites)),
+                        'phase_complete': phase_complete
+                    }
+
+                    current_matrix_index += 1
+
+                transmitting_length = timestep_in_phase
+
+                # Update phase_length for all TRANSMITTING timesteps
+                for i in range(phase_start_index, current_matrix_index):
+                    if i < len(adjacency_matrices):
+                        timestamp_key = adjacency_matrices[i][0]
+                        algorithm_output[timestamp_key]['phase_length'] = transmitting_length
+
+                # Phase 2: REDISTRIBUTION (Distribution from static server)
+                print(f"\n### PHASE 2: REDISTRIBUTION (Distribute Global Model) ###")
+                print(f"Static Redistribution Server {redistribution_server}")
+
+                redistribution_start_index = current_matrix_index
+                timestep_in_phase = 0
+                target_satellites_redist = connected_satellites.copy()  # Only redistribute to those we got models from
+                connected_satellites_redist = set()
+                phase_complete = False
+
+                print(f"Redistribution Server {redistribution_server} targeting {len(target_satellites_redist)} satellites: {sorted(list(target_satellites_redist))}")
+
+                while current_matrix_index < len(adjacency_matrices) and not phase_complete:
+                    timestep_in_phase += 1
+                    time_stamp, matrix = adjacency_matrices[current_matrix_index]
+
+                    # Check connections
+                    current_timestamp_connections = set()
+                    for target_sat in target_satellites_redist:
+                        if matrix[redistribution_server][target_sat] == 1:
+                            current_timestamp_connections.add(target_sat)
+                            connected_satellites_redist.add(target_sat)
+
+                    # Check completion
+                    if connected_satellites_redist >= target_satellites_redist:
+                        phase_complete = True
+                        print(f"  ✓ REDISTRIBUTION complete at timestep {timestep_in_phase}")
+                        print(f"    Global model distributed to: {sorted(list(connected_satellites_redist))}")
+                    else:
+                        print(f"  → Timestep {timestep_in_phase}: {len(connected_satellites_redist)}/{len(target_satellites_redist)} models distributed")
+
+                    # Store output
+                    algorithm_output[time_stamp] = {
+                        'satellite_count': num_satellites,
+                        'satellite_names': self.satellite_names,
+                        'selected_satellite': self.satellite_names[redistribution_server],
+                        'aggregator_id': aggregation_server,
+                        'redistribution_id': redistribution_server,
+                        'federatedlearning_adjacencymatrix': matrix,
+                        'aggregator_flag': False,
+                        'round_number': self.round_number,
+                        'phase': "REDISTRIBUTION",
+                        'target_node': redistribution_server,
+                        'phase_length': timestep_in_phase,
+                        'timestep_in_phase': timestep_in_phase,
+                        'server_connections_current': len(current_timestamp_connections),
+                        'server_connections_cumulative': len(connected_satellites_redist),
+                        'target_connections': len(target_satellites_redist),
+                        'connected_satellites': sorted(list(connected_satellites_redist)),
+                        'missing_satellites': sorted(list(target_satellites_redist - connected_satellites_redist)),
+                        'target_satellites': sorted(list(target_satellites_redist)),
+                        'phase_complete': phase_complete
+                    }
+
+                    current_matrix_index += 1
+
+                redistribution_length = timestep_in_phase
+
+                # Update phase_length for all REDISTRIBUTION timesteps
+                for i in range(redistribution_start_index, current_matrix_index):
+                    if i < len(adjacency_matrices):
+                        timestamp_key = adjacency_matrices[i][0]
+                        algorithm_output[timestamp_key]['phase_length'] = redistribution_length
+
+                # Round summary
+                total_round_length = transmitting_length + redistribution_length
+                print(f"\n{'='*80}")
+                print(f"Round {self.round_number} Summary (FedAvg Mode):")
+                print(f"  Static Server: {aggregation_server} ({self.satellite_names[aggregation_server]})")
+                print(f"  TRANSMITTING: {transmitting_length} timesteps")
+                print(f"  REDISTRIBUTION: {redistribution_length} timesteps")
+                print(f"  Total: {total_round_length} timesteps")
+                print(f"{'='*80}\n")
+
+                self.round_number += 1
+                continue  # Skip to next round
 
             # ============================================================
             # PHASE 1: TRANSMITTING (Aggregation)
@@ -419,11 +849,6 @@ class Algorithm():
 
                 current_matrix_index += 1
 
-                # Safety timeout
-                if timestep_in_phase >= 20:
-                    print(f"  ⚠ TRANSMITTING timeout after {timestep_in_phase} timestamps")
-                    phase_complete = True
-
             transmitting_length = timestep_in_phase
 
             # Update phase_length for all TRANSMITTING timesteps
@@ -448,11 +873,10 @@ class Algorithm():
             self.redistribution_server = redistribution_server
 
             # Run CHECK phase (waiting for connection to redistribution server)
-            check_start_index = current_matrix_index
-
             if check_duration == 0:
                 print(f"  ✓ Redistribution server is same as aggregation server (Server {redistribution_server})")
                 print(f"  ✓ CHECK phase duration: 0 timesteps (no transfer needed)")
+                # Note: No output written for 0-duration CHECK phase, goes directly to REDISTRIBUTION
             else:
                 print(f"  → Transferring model from Server {aggregation_server} to Server {redistribution_server}")
                 print(f"  → CHECK phase duration: {check_duration} timesteps")
@@ -558,11 +982,6 @@ class Algorithm():
                 }
 
                 current_matrix_index += 1
-
-                # Safety timeout
-                if timestep_in_phase >= 20:
-                    print(f"  ⚠ REDISTRIBUTION timeout after {timestep_in_phase} timestamps")
-                    phase_complete = True
 
             redistribution_length = timestep_in_phase
 
