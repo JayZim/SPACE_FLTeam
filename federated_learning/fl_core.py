@@ -865,13 +865,37 @@ class FederatedLearning:
 
         print(f"\nFederated learning process completed in {self.total_training_time:.2f} seconds.")
         print("\nTimestep-wise processing times and accuracies:")
+
+        # Build a mapping from timestep -> logged accuracy (may be None or 0)
+        timestep_to_accuracy = {entry["timestep"]: entry.get("accuracy") for entry in self.participation_log}
+
         for idx, round_time in self.round_times.items():
-            timestep_num = int(idx.split('_')[1]) - 1
-            if timestep_num < len(round_accuracies):
-                acc = round_accuracies[timestep_num]
-                print(f"{idx}: {round_time:.2f} seconds, Accuracy: {acc:.2%}")
+            # Extract timestep number from the key "timestep_X"
+            timestep_num = int(idx.split('_')[1])
+
+            # Prefer the explicitly logged accuracy for that timestep if present
+            acc = timestep_to_accuracy.get(timestep_num, None)
+
+            # If no accuracy or a 0 (skipped), find the most recent prior non-zero accuracy
+            if acc is None or acc == 0:
+                last_acc = None
+                # iterate participation_log in reverse to find latest non-zero accuracy <= timestep_num
+                for entry in reversed(self.participation_log):
+                    t = entry.get("timestep")
+                    if t is None or t > timestep_num:
+                        continue
+                    a = entry.get("accuracy")
+                    if a is not None and a != 0:
+                        last_acc = a
+                        break
+                if last_acc is not None:
+                    acc_display = f"{last_acc:.2%}"
+                else:
+                    acc_display = "N/A"
             else:
-                print(f"{idx}: {round_time:.2f} seconds, Accuracy: N/A")
+                acc_display = f"{acc:.2%}"
+
+            print(f"{idx}: {round_time:.2f} seconds, Accuracy: {acc_display}")
         print(f"Average timestep time: {self.total_training_time/len(self.round_times):.2f} seconds")
 
 if __name__ == "__main__":
