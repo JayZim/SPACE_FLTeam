@@ -850,8 +850,8 @@ class FederatedLearning:
             out_of_range_clients = flam_entry['missing_sats']
 
             round_num = flam_entry['round']
-            if round_num not in fl_instance.trained_clients_per_round:
-                fl_instance.trained_clients_per_round[round_num] = set()
+            if round_num not in self.trained_clients_per_round:
+                self.trained_clients_per_round[round_num] = set()
 
             print(f"Phase: {phase}")
             print(f"Aggregation Server: {aggregation_server}")
@@ -914,8 +914,6 @@ class FederatedLearning:
 
             # After processing each flam_entry
             is_last_phase_of_round = flam_entry.get("phase_complete", False)
-<<<<<<< Updated upstream
-=======
 
             # Evaluate global model on test set only after round completion (when aggregation happens)
             timestep_accuracy = None
@@ -925,19 +923,15 @@ class FederatedLearning:
                 # After aggregation, evaluate the global model on test set
                 test_accuracy = self.evaluate_global_model()
                 timestep_accuracy = test_accuracy
-                round_accuracies.append(test_accuracy)
-                self.last_evaluated_round = current_round
                 print(f"🧪 Test set accuracy after Round {current_round}: {test_accuracy:.2%}")
+                self.last_evaluated_round = current_round
             elif phase == "TRANSMITTING" and not round_accuracies_this:
-                # No clients trained, use previous accuracy
+                # No clients trained, use previous accuracy from round_accuracies list (not avg_acc)
                 timestep_accuracy = round_accuracies[-1] if round_accuracies else 0.1
-                round_accuracies.append(timestep_accuracy)
             else:
                 # For non-TRANSMITTING phases, use the last test accuracy
                 timestep_accuracy = round_accuracies[-1] if round_accuracies else 0.1
-                round_accuracies.append(timestep_accuracy)
-            
->>>>>>> Stashed changes
+
             self.participation_log.append({
                 "timestep": flam_entry['timestep'],
                 "round": flam_entry['round'],
@@ -946,7 +940,7 @@ class FederatedLearning:
                 "redistribution_server": redistribution_server,
                 "in_range_clients": in_range_clients,
                 "out_of_range_clients": out_of_range_clients,
-                "accuracy": avg_acc if phase == "TRANSMITTING" and round_accuracies_this else None,
+                "accuracy": timestep_accuracy,
                 "round_complete": is_last_phase_of_round
             })
 
