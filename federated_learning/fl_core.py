@@ -80,18 +80,22 @@ class FederatedLearning:
 
     # --- Client Object (Inner Class) ---
     class Client:
-        def __init__(self, client_id, model, data_loader):
+        def __init__(self, client_id, model, data_loader, device):
             self.client_id = client_id
             self.model = model
             self.data_loader = data_loader
+            self.device = device
 
-        def train(self, epochs=3):
+        def train(self, epochs=1):
             criterion = nn.CrossEntropyLoss()
             optimizer = optim.SGD(self.model.parameters(), lr=0.01)
             correct = 0
             total = 0
+            self.model.to(self.device)
             for _ in range(epochs):
                 for data, target in self.data_loader:
+                    data = data.to(self.device)
+                    target = target.to(self.device)
                     optimizer.zero_grad()
                     output = self.model(data)
                     loss = criterion(output, target)
@@ -142,6 +146,18 @@ class FederatedLearning:
             except Exception as e:
                 print(f"Warning: Failed to initialize adaptation system: {e}")
                 self.adaptation_enabled = False
+
+        # Select compute device (CUDA -> MPS -> CPU)
+        try:
+            if torch.cuda.is_available():
+                self.device = torch.device("cuda")
+            elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+                self.device = torch.device("mps")
+            else:
+                self.device = torch.device("cpu")
+        except Exception:
+            self.device = torch.device("cpu")
+        print(f"✓ Using device: {self.device}")
 
     def set_num_rounds(self, rounds: int) -> None:
         """Set the number of federated learning rounds."""
@@ -237,7 +253,18 @@ class FederatedLearning:
         
         # Create standard client splits
         client_datasets = random_split(full_dataset, [len(full_dataset) // self.num_clients] * self.num_clients)
-        self.client_data = [DataLoader(dataset, batch_size=32, shuffle=True) for dataset in client_datasets]
+        workers = max(1, (os.cpu_count() or 1))
+        self.client_data = [
+            DataLoader(
+                dataset,
+                batch_size=64,
+                shuffle=True,
+                num_workers=workers,
+                pin_memory=True,
+                persistent_workers=True
+            )
+            for dataset in client_datasets
+        ]
         print(f"✓ Created {len(self.client_data)} standard client data loaders")
 
     def initialize_model(self, model_name=None, auto_select=True, interactive_mode=True, 
@@ -418,8 +445,11 @@ class FederatedLearning:
         
         correct = 0
         total = 0
+        model.to(self.device)
         for epoch in range(local_epochs):
             for batch_idx, (data, target) in enumerate(data_loader):
+                data = data.to(self.device)
+                target = target.to(self.device)
                 optimizer.zero_grad()
                 output = model(data)
                 loss = criterion(output, target)
@@ -691,10 +721,26 @@ class FederatedLearning:
                 connected_sats = ast.literal_eval(re.search(r'Connected Sats: (\[.*?\])', header).group(1))
                 missing_sats = ast.literal_eval(re.search(r'Missing Sats: (\[.*?\])', header).group(1))
                 target_sats = ast.literal_eval(re.search(r'Target Sats: (\[.*?\])', header).group(1))
+                # Normalize FLAM 1-based indices to 0-based indices used by this codebase
+                connected_sats = [int(x) - 1 for x in connected_sats]
+                missing_sats = [int(x) - 1 for x in missing_sats]
+                target_sats = [int(x) - 1 for x in target_sats]
                 phase_complete = re.search(r'Phase Complete: (\w+)', header).group(1) == "True"
+                # Dynamically read adjacency matrix rows until a non-matrix line or next header
                 adjacency = []
-                for j in range(i+1, i+1+8):  # 8 clients/nodes
-                    adjacency.append([int(x) for x in lines[j].strip().split(',')])
+                j = i + 1
+                while j < len(lines):
+                    next_line = lines[j].strip()
+                    # Stop if next header starts or line is empty
+                    if not next_line or next_line.startswith("Time:"):
+                        break
+                    # Accept lines that look like comma-separated integers
+                    parts = [p.strip() for p in next_line.split(',')]
+                    if parts and all(p.isdigit() for p in parts):
+                        adjacency.append([int(x) for x in parts])
+                        j += 1
+                    else:
+                        break
                 yield {
                     'timestep': timestep,
                     'round': parsed_round,
@@ -713,7 +759,9 @@ class FederatedLearning:
                 # If FLAM didn't include an explicit Round field, increment current_round when phase completes
                 if not round_match and phase_complete:
                     current_round += 1
-                i += 8
+                # Advance to the next header start without skipping it in the outer loop
+                i = j
+                continue
             i += 1
 
 
@@ -752,6 +800,23 @@ class FederatedLearning:
             except Exception as e:
                 print(f"Model selection failed: {e}, using defaults")
         
+        # If a FLAM file is provided, parse it first to infer number of clients
+        flam_schedule = None
+        if flam_path is not None:
+            try:
+                prelim_schedule = list(self.parse_flam_file(flam_path))
+                if prelim_schedule:
+                    first = prelim_schedule[0]
+                    # Prefer adjacency size if provided; fallback to max index from connected_sats + 1
+                    inferred_clients = len(first.get('adjacency', [])) or (
+                        (max(first.get('connected_sats', [])) + 1) if first.get('connected_sats') else self.num_clients
+                    )
+                    if inferred_clients and inferred_clients != self.num_clients:
+                        self.set_num_clients(inferred_clients)
+                flam_schedule = prelim_schedule
+            except Exception:
+                flam_schedule = None
+
         self.initialize_data(dataset_name)
         self.initialize_model(model_name, auto_select_model, interactive_mode)
         total_start_time = time.time()
@@ -759,11 +824,12 @@ class FederatedLearning:
 
         # Initialize parameter server and clients
         server = self.ParameterServer(self.global_model)
-        clients = [self.Client(i, type(self.global_model)(), self.client_data[i]) for i in range(self.num_clients)]
+        clients = [self.Client(i, type(self.global_model)(), self.client_data[i], self.device) for i in range(self.num_clients)]
 
         # Handle FLAM file or run without it
         if flam_path is not None:
-            flam_schedule = list(self.parse_flam_file(flam_path))
+            if flam_schedule is None:
+                flam_schedule = list(self.parse_flam_file(flam_path))
             print(f"Loaded FLAM schedule with {len(flam_schedule)} timesteps.")
         else:
             # Run without FLAM file - simple federated learning
@@ -783,13 +849,17 @@ class FederatedLearning:
             out_of_range_clients = flam_entry['missing_sats']
 
             round_num = flam_entry['round']
-            if round_num not in fl_instance.trained_clients_per_round:
-                fl_instance.trained_clients_per_round[round_num] = set()
+            if round_num not in self.trained_clients_per_round:
+                self.trained_clients_per_round[round_num] = set()
 
             print(f"Phase: {phase}")
-            print(f"Aggregation Server: {aggregation_server}")
-            print(f"Redistribution Server: {redistribution_server}")
-            print(f"Target Node: {target_node}")
+            # Display as 1-based IDs to align with satellite numbering
+            agg_disp = (aggregation_server + 1) if aggregation_server is not None else None
+            redisp_disp = (redistribution_server + 1) if redistribution_server is not None else None
+            target_disp = (target_node + 1) if target_node is not None else None
+            print(f"Aggregation Server: {agg_disp}")
+            print(f"Redistribution Server: {redisp_disp}")
+            print(f"Target Node: {target_disp}")
             print(f"In-range clients: {[f'Client {i+1}' for i in in_range_clients]}")
             print(f"Waiting to connect: {[f'Client {i+1}' for i in out_of_range_clients]}")
             print(f"Phase Complete: {flam_entry['phase_complete']}")
@@ -831,13 +901,13 @@ class FederatedLearning:
             elif phase == "CHECK":
                 # Transfer global model to redistribution server (no training, just transfer)
                 if redistribution_server is not None:
-                    print(f"Transferring global model from Aggregation Server {aggregation_server} to Redistribution Server {redistribution_server}")
+                    print(f"Transferring global model from Aggregation Server {agg_disp} to Redistribution Server {redisp_disp}")
                 else:
                     print("Redistribution server not yet determined.")
 
             elif phase == "REDISTRIBUTION":
                 # Distribute global model from redistribution server to all clients
-                print(f"Redistributing global model from Redistribution Server {redistribution_server} to all clients.")
+                print(f"Redistributing global model from Redistribution Server {redisp_disp} to all clients.")
                 for client_id, client in enumerate(clients):
                     if client_id in in_range_clients:
                         client.update_model(server.get_global_model().state_dict())
@@ -865,13 +935,37 @@ class FederatedLearning:
 
         print(f"\nFederated learning process completed in {self.total_training_time:.2f} seconds.")
         print("\nTimestep-wise processing times and accuracies:")
+
+        # Build a mapping from timestep -> logged accuracy (may be None or 0)
+        timestep_to_accuracy = {entry["timestep"]: entry.get("accuracy") for entry in self.participation_log}
+
         for idx, round_time in self.round_times.items():
-            timestep_num = int(idx.split('_')[1]) - 1
-            if timestep_num < len(round_accuracies):
-                acc = round_accuracies[timestep_num]
-                print(f"{idx}: {round_time:.2f} seconds, Accuracy: {acc:.2%}")
+            # Extract timestep number from the key "timestep_X"
+            timestep_num = int(idx.split('_')[1])
+
+            # Prefer the explicitly logged accuracy for that timestep if present
+            acc = timestep_to_accuracy.get(timestep_num, None)
+
+            # If no accuracy or a 0 (skipped), find the most recent prior non-zero accuracy
+            if acc is None or acc == 0:
+                last_acc = None
+                # iterate participation_log in reverse to find latest non-zero accuracy <= timestep_num
+                for entry in reversed(self.participation_log):
+                    t = entry.get("timestep")
+                    if t is None or t > timestep_num:
+                        continue
+                    a = entry.get("accuracy")
+                    if a is not None and a != 0:
+                        last_acc = a
+                        break
+                if last_acc is not None:
+                    acc_display = f"{last_acc:.2%}"
+                else:
+                    acc_display = "N/A"
             else:
-                print(f"{idx}: {round_time:.2f} seconds, Accuracy: N/A")
+                acc_display = f"{acc:.2%}"
+
+            print(f"{idx}: {round_time:.2f} seconds, Accuracy: {acc_display}")
         print(f"Average timestep time: {self.total_training_time/len(self.round_times):.2f} seconds")
 
 if __name__ == "__main__":

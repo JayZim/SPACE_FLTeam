@@ -98,3 +98,8 @@ if __name__ == "__main__":
     config = Config(fl_instance)
 
     config.read_options_from_file("options.json")
+
+# --- Compatibility shim for module_factory ---
+# Some modules import FLConfig; provide a thin alias to current Config to avoid refactors.
+class FLConfig(Config):
+    pass

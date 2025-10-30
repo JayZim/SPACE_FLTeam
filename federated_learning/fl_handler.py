@@ -91,6 +91,14 @@ class FLHandler(Handler):
         # Initialize FL system only once
         if not hasattr(self, '_fl_initialized'):
             print("[INFO] Initializing FL system for first time...")
+            # Infer client count from FLAM if available
+            try:
+                if 'satellite_count' in self.flam.columns:
+                    sat_count = int(self.flam['satellite_count'].iloc[0])
+                    if sat_count > 0:
+                        self.federated_learning.set_num_clients(sat_count)
+            except Exception:
+                pass
             self.federated_learning.initialize_data()
             self.federated_learning.initialize_model()
             self._fl_initialized = True
@@ -111,7 +119,9 @@ class FLHandler(Handler):
 
                 # Simplified display format focusing on essential information
                 print(f"\nTime: {time_stamp}, Timestep: {timestep}, Round: {round_num}, Phase: {phase}")
-                print(f"Aggregation Server: {aggregator_id}, Target Node: {aggregator_id}")
+                # Display as 1-based for readability
+                agg_disp = (int(aggregator_id) + 1) if aggregator_id is not None else None
+                print(f"Aggregation Server: {agg_disp}, Target Node: {agg_disp}")
                 
                 # Display matrix
                 for matrix_row in matrix:
