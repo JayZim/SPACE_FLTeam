@@ -92,6 +92,7 @@ class Algorithm():
         self.connect_to_all_satellites = False
         self.max_lookahead = 20
         self.minimum_connected_satellites = 5
+        self.minimum_satellites_for_redistribution = 7
 
         # FedAvg mode parameters
         self.fedavg_mode = False
@@ -121,6 +122,9 @@ class Algorithm():
 
     def set_minimum_connected_satellites(self, minimum_connected_satellites):
         self.minimum_connected_satellites = minimum_connected_satellites
+
+    def set_minimum_satellites_for_redistribution(self, minimum_satellites_for_redistribution):
+        self.minimum_satellites_for_redistribution = minimum_satellites_for_redistribution
 
     def set_fedavg_mode(self, fedavg_mode):
         self.fedavg_mode = fedavg_mode
@@ -382,11 +386,11 @@ class Algorithm():
         if self.connect_to_all_satellites:
             required_connections = num_satellites - 1  # All satellites except self
         else:
-            required_connections = self.minimum_connected_satellites
+            required_connections = self.minimum_satellites_for_redistribution
 
         print(f"\n=== Finding Redistribution Server (from Aggregation Server {aggregation_server}) ===")
         print(f"Configuration: connect_to_all={self.connect_to_all_satellites}, "
-              f"min_satellites={self.minimum_connected_satellites}, max_lookahead={max_lookahead}")
+              f"min_satellites_redist={self.minimum_satellites_for_redistribution}, max_lookahead={max_lookahead}")
         print(f"Required connections: {required_connections}/{num_satellites-1}")
 
         # Step 1: Analyze path from aggregation_server to each candidate

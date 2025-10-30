@@ -51,11 +51,13 @@
         "server_selection": {
             "connect_to_all_satellites": false,
             "max_lookahead": 20,
-            "minimum_connected_satellites": 5
+            "minimum_connected_satellites": 5,
+            "minimum_satellites_for_redistribution": 7
         },
         "module_settings": {
             "output_to_file": true
         }
+    },
     "model_evaluation": {
       "enable_auto_selection": true,
       "evaluation": {
