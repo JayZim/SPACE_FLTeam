@@ -1,0 +1,21 @@
+{
+  "timestamp": "2025-10-24T14:06:24.219178",
+  "mode": "non_interactive",
+  "configuration": {
+    "satellites": 8,
+    "timesteps": 100,
+    "fl_rounds": 5,
+    "fl_clients": 6,
+    "model_type": "SimpleCNN",
+    "data_set": "MNIST",
+    "interactive_mode": false,
+    "adaptation_enabled": false
+  },
+  "timing": {
+    "sat_sim": 0.4183821678161621,
+    "algorithm": 0.6918599605560303,
+    "federated_learning": 565.3859260082245,
+    "total": 566.4984500408173
+  },
+  "status": "success"
+}

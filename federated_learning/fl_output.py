@@ -448,6 +448,7 @@ class FLOutput(Output):
         phase_text = ax.text(0.5, 1.05, '', transform=ax.transAxes, fontsize=16, ha="center")
         accuracy_text = ax.text(0.5, -0.18, '', transform=ax.transAxes, fontsize=14, ha="center")
         round_acc_text = ax.text(0.5, 0.95, '', transform=ax.transAxes, fontsize=14, ha="center", color="purple")
+        rounds_text = ax.text(0.5, 1.12, '', transform=ax.transAxes, fontsize=14, ha="center", color="darkgreen")
 
         def init():
             for i, (x, y) in enumerate(client_positions):
@@ -455,7 +456,7 @@ class FLOutput(Output):
                 ax.add_patch(circle)
                 ax.text(x, y, f"{i+1}", fontsize=12, ha='center', va='center')
                 circles.append(circle)
-            return circles + [phase_text, accuracy_text, round_acc_text]
+            return circles + [rounds_text, phase_text, accuracy_text, round_acc_text]
 
         def update(frame):
             for arrow in arrows:
@@ -571,6 +572,12 @@ class FLOutput(Output):
                                             arrowprops=dict(arrowstyle="->", color='deepskyblue', lw=2))
                         arrows.append(arrow)
 
+            rounds_completed = sum(entry.get("round_complete", False) for entry in participation_log[:frame+1])
+
+            # Add rounds completed label above phase label
+            rounds_text.set_text(f"Rounds completed: {rounds_completed}")
+
+            # Existing phase label
             phase_label = f"Phase: {phase}"
             if phase == "CHECK":
                 phase_label += " (Model transfer)"
@@ -594,7 +601,7 @@ class FLOutput(Output):
                 else:
                     round_acc_text.set_text("Training Skipped")
 
-            return circles + arrows + [phase_text, accuracy_text, round_acc_text]
+            return circles + arrows + [rounds_text, phase_text, accuracy_text, round_acc_text]
 
         ani = animation.FuncAnimation(fig, update, frames=num_timesteps,
                                       init_func=init, blit=False, repeat=False)
