@@ -188,26 +188,30 @@ class ModelRegistry:
         class SimpleCNN(nn.Module):
             def __init__(self, input_shape=(64, 64, 3), num_classes=10):
                 super(SimpleCNN, self).__init__()
-                # 统一使用 3 通道 64x64 输入
-                self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
+                # 3-channel input (adaptive to spatial size via AdaptiveAvgPool)
+                in_channels = input_shape[2]
+                self.conv1 = nn.Conv2d(in_channels, 32, kernel_size=3, padding=1)
                 self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
                 self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
                 self.pool = nn.MaxPool2d(2, 2)
-                # 64x64 -> 32x32 -> 16x16 -> 8x8 (3 pooling layers)
-                self.fc1 = nn.Linear(128 * 8 * 8, 256)
+                # use adaptive pooling to collapse spatial dims to 1x1 regardless of input size
+                self.adaptive_pool = nn.AdaptiveAvgPool2d((1, 1))
+                # fc layers operate on fixed-size feature vector (128)
+                self.fc1 = nn.Linear(128, 256)
                 self.fc2 = nn.Linear(256, num_classes)
                 self.dropout = nn.Dropout(0.5)
-                
+
             def forward(self, x):
-                x = self.pool(torch.relu(self.conv1(x)))  # 64 -> 32
-                x = self.pool(torch.relu(self.conv2(x)))  # 32 -> 16
-                x = self.pool(torch.relu(self.conv3(x)))  # 16 -> 8
-                x = x.view(-1, 128 * 8 * 8)
-                x = torch.relu(self.fc1(x))
-                x = self.dropout(x)
-                x = self.fc2(x)
-                return x
-        
+               x = self.pool(torch.relu(self.conv1(x)))
+               x = self.pool(torch.relu(self.conv2(x)))
+               x = self.pool(torch.relu(self.conv3(x)))
+               x = self.adaptive_pool(x)             # -> (B, 128, 1, 1)
+               x = x.view(x.size(0), -1)             # -> (B, 128)
+               x = torch.relu(self.fc1(x))
+               x = self.dropout(x)
+               x = self.fc2(x)
+               return x
+
         return SimpleCNN(**kwargs)
     
     def _create_resnet50(self, **kwargs):
