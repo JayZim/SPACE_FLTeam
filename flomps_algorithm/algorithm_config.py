@@ -60,4 +60,7 @@ class AlgorithmConfig(Config):
             self.algorithm.set_minimum_connected_satellites(
                 server_selection.get("minimum_connected_satellites", 5)
             )
+            self.algorithm.set_minimum_satellites_for_redistribution(
+                server_selection.get("minimum_satellites_for_redistribution", 7)
+            )
 

@@ -115,6 +115,7 @@ class FederatedLearning:
         self.num_clients = 5
         self.global_model = None
         self.client_data = []
+        self.test_data = None  # Add test dataset for evaluation
         self.round_times = {}
         self.round_accuracies = []
         self.total_training_time = 0
@@ -125,6 +126,7 @@ class FederatedLearning:
         self.model_evaluation_history = []
         self.participation_log = []
         self.trained_clients_per_round = {}
+        self.last_evaluated_round = -1  # Track which round was last evaluated
         
         # Initialize model evaluation module if enabled
         if self.model_evaluation_enabled:
@@ -193,11 +195,11 @@ class FederatedLearning:
 
     def initialize_data(self, dataset_name="MNIST", use_heterogeneous=True):
         """Initialize client data loaders using the lightweight adaptation system"""
-        
+
         if self.adaptation_enabled and hasattr(self, 'adaptation_system'):
             # Use the lightweight adaptation system
             print(f"Initializing {dataset_name} dataset with adaptation system...")
-            
+
             try:
                 full_dataset = self.adaptation_system.dataset_adapter.load_dataset(dataset_name)
                 self.client_data = self.adaptation_system.dataset_adapter.create_client_splits(
@@ -210,7 +212,10 @@ class FederatedLearning:
         else:
             # Fallback to standard loading
             self._initialize_data_fallback(dataset_name)
-        
+
+        # Initialize test dataset for evaluation
+        self._initialize_test_data(dataset_name)
+
         self.current_dataset = dataset_name
         print(f"✓ Initialized {dataset_name} dataset for {self.num_clients} clients")
     
@@ -266,6 +271,49 @@ class FederatedLearning:
             for dataset in client_datasets
         ]
         print(f"✓ Created {len(self.client_data)} standard client data loaders")
+
+    def _initialize_test_data(self, dataset_name="MNIST"):
+        """Initialize test dataset for model evaluation"""
+        if dataset_name == "MNIST":
+            transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.5,), (0.5,)),
+                transforms.Lambda(lambda x: x.repeat(3, 1, 1))
+            ])
+            data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'MNIST')
+            test_dataset = torchvision.datasets.MNIST(root=data_root, train=False, download=True, transform=transform)
+
+        elif dataset_name == "CIFAR10":
+            transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+            ])
+            data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'CIFAR10')
+            test_dataset = torchvision.datasets.CIFAR10(root=data_root, train=False, download=True, transform=transform)
+
+        elif dataset_name == "EuroSAT":
+            # EuroSAT doesn't have a separate test set, so we'll create one from the full dataset
+            test_transform = transforms.Compose([
+                transforms.Resize((64, 64)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.3443, 0.3804, 0.4086], std=[0.1814, 0.1535, 0.1311])
+            ])
+            data_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'EuroSAT')
+            try:
+                full_dataset = torchvision.datasets.EuroSAT(root=data_root, download=True, transform=test_transform)
+                # Use 20% for testing
+                test_size = int(0.2 * len(full_dataset))
+                train_size = len(full_dataset) - test_size
+                _, test_dataset = random_split(full_dataset, [train_size, test_size])
+            except Exception as e:
+                print(f"Warning: EuroSAT test set creation failed ({e}), falling back to MNIST")
+                return self._initialize_test_data("MNIST")
+        else:
+            # Default to MNIST
+            return self._initialize_test_data("MNIST")
+
+        self.test_data = DataLoader(test_dataset, batch_size=32, shuffle=False)
+        print(f"✓ Initialized test dataset: {len(test_dataset)} samples")
 
     def initialize_model(self, model_name=None, auto_select=True, interactive_mode=True, 
                         transfer_from_current=True):
@@ -474,6 +522,25 @@ class FederatedLearning:
         for key in global_dict.keys():
             global_dict[key] = torch.stack([client_model[key].float() for client_model in client_models], 0).mean(0)
         self.global_model.load_state_dict(global_dict)
+
+    def evaluate_global_model(self):
+        """Evaluate the global model on the test dataset."""
+        if self.test_data is None:
+            return 0.0
+
+        self.global_model.eval()
+        correct = 0
+        total = 0
+
+        with torch.no_grad():
+            for data, target in self.test_data:
+                output = self.global_model(data)
+                _, predicted = torch.max(output.data, 1)
+                total += target.size(0)
+                correct += (predicted == target).sum().item()
+
+        self.global_model.train()  # Set back to training mode
+        return correct / total if total > 0 else 0.0
 
     def get_round_metrics(self) -> Dict:
         """Return round metrics for analysis"""
@@ -917,6 +984,24 @@ class FederatedLearning:
 
             # After processing each flam_entry
             is_last_phase_of_round = flam_entry.get("phase_complete", False)
+
+            # Evaluate global model on test set only after round completion (when aggregation happens)
+            timestep_accuracy = None
+            current_round = flam_entry['round']
+
+            if phase == "TRANSMITTING" and round_accuracies_this:
+                # After aggregation, evaluate the global model on test set
+                test_accuracy = self.evaluate_global_model()
+                timestep_accuracy = test_accuracy
+                print(f"🧪 Test set accuracy after Round {current_round}: {test_accuracy:.2%}")
+                self.last_evaluated_round = current_round
+            elif phase == "TRANSMITTING" and not round_accuracies_this:
+                # No clients trained, use previous accuracy from round_accuracies list (not avg_acc)
+                timestep_accuracy = round_accuracies[-1] if round_accuracies else 0.1
+            else:
+                # For non-TRANSMITTING phases, use the last test accuracy
+                timestep_accuracy = round_accuracies[-1] if round_accuracies else 0.1
+
             self.participation_log.append({
                 "timestep": flam_entry['timestep'],
                 "round": flam_entry['round'],
@@ -925,7 +1010,7 @@ class FederatedLearning:
                 "redistribution_server": redistribution_server,
                 "in_range_clients": in_range_clients,
                 "out_of_range_clients": out_of_range_clients,
-                "accuracy": avg_acc if phase == "TRANSMITTING" and round_accuracies_this else None,
+                "accuracy": timestep_accuracy,
                 "round_complete": is_last_phase_of_round
             })
 
