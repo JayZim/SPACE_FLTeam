@@ -251,9 +251,20 @@ if __name__ == "__main__":
                 # Extract custom parameters if provided
                 timesteps = getattr(args, 'timesteps', None)
                 custom_duration = getattr(args, 'custom_duration', None)
+                flam_file = getattr(args, 'flam_file', None)
+                select_flam = getattr(args, 'select_flam', False)
+                interactive_fl_output = getattr(args, 'interactive_fl_output', False)
                 
                 # Pass custom parameters to FLOMPS workflow
-                flomps.run(input_file, options, timesteps=timesteps, custom_duration=custom_duration)
+                flomps.run(
+                    input_file,
+                    options,
+                    timesteps=timesteps,
+                    custom_duration=custom_duration,
+                    flam_file=flam_file,
+                    interactive_select_flam=select_flam,
+                    interactive_fl_output=interactive_fl_output,
+                )
 
             # Continue if statements here for additional workflows...
 

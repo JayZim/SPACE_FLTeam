@@ -50,6 +50,11 @@ def setup_flomps_parser(parser):
         # Global workflow options
         parser.add_argument('--timesteps', type=int, help='Number of timesteps to generate for the simulation (default: from options.json)')
         parser.add_argument('--custom-duration', type=str, help='Custom simulation duration in format HH:MM:SS (e.g., 01:40:00 for 100 minutes)')
+        # FLAM selection options
+        parser.add_argument('--flam-file', type=str, help='Explicit path to a FLAM file to use for FL training')
+        parser.add_argument('--select-flam', action='store_true', help='Interactively select a FLAM file after algorithm output')
+        # FL output options
+        parser.add_argument('--interactive-fl-output', action='store_true', help='Enable interactive prompts for GIF generation and dashboard creation after FL training')
 
     # Bundle FLOMPS parser
     add_positional_args(parser)

@@ -28,6 +28,8 @@ class SatSim:
         self.output_path = ""
         self.gui_enabled = gui_enabled
         self.output_to_file = output_to_file
+        # Default link distance threshold in kilometers; can be overridden via config
+        self.distance_threshold_km = 30000
 
         if self.start_time is not None and self.end_time is not None:
             if not isinstance(self.start_time, type(self.sf_timescale.utc(0))):
@@ -56,6 +58,16 @@ class SatSim:
         # Set the output file format (csv or txt).
         self.output_file_type = file_type
         self.output.set_output_file_type(file_type)
+
+    def set_distance_threshold_km(self, threshold_km: float):
+        # Set connectivity distance threshold (in kilometers) for link existence
+        try:
+            value = float(threshold_km)
+            if value <= 0:
+                return
+            self.distance_threshold_km = value
+        except Exception:
+            pass
 
     def set_output_to_file(self, output_to_file):
         # Set whether to output to file.
@@ -100,17 +112,18 @@ class SatSim:
         # Calculate the Euclidean distance between two satellite positions.
         return np.linalg.norm(np.array(pos1) - np.array(pos2))
 
-    def generate_adjacency_matrix(self, positions, distance_threshold=10000):
+    def generate_adjacency_matrix(self, positions, distance_threshold=None):
         # Generate an adjacency matrix based on the distances between satellites.
         keys = list(positions.keys())
         size = len(keys)
         adj_matrix = np.zeros((size, size), dtype=int)
 
         # Compute distances between all satellite pairs and populate the adjacency matrix
+        threshold = self.distance_threshold_km if distance_threshold is None else distance_threshold
         for i in range(size):
             for j in range(i + 1, size):
                 dist = self.calculate_distance(positions[keys[i]], positions[keys[j]])
-                adj_matrix[i, j] = adj_matrix[j, i] = 1 if dist < distance_threshold else 0
+                adj_matrix[i, j] = adj_matrix[j, i] = 1 if dist < threshold else 0
 
         return adj_matrix, keys
 

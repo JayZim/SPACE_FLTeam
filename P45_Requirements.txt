@@ -1,0 +1,29 @@
+# Core ML & Data
+torch>=2.2.0
+torchvision>=0.17.0
+numpy>=1.24
+pandas>=2.2
+
+# Visualization & Dashboard
+matplotlib>=3.8
+seaborn>=0.13
+plotly>=5.22
+pillow>=10.0
+
+# GUI & OpenGL (SPACEGUI)
+PyQt5>=5.15
+PyOpenGL>=3.1.7
+
+# Satellite Simulation (SatSim, TLE processing)
+skyfield>=1.46
+sgp4>=2.22
+
+
+# TensorFlow (legacy compatibility for model.py)
+# - Intel/
+tensorflow==2.16.1; platform_machine != "arm64"
+# - Apple Silicon (arm64): 
+tensorflow-macos==2.15.0; platform_system == "Darwin" and platform_machine == "arm64"
+tensorflow-metal>=1.1.0; platform_system == "Darwin" and platform_machine == "arm64"
+
+

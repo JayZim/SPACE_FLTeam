@@ -67,6 +67,13 @@ class SatSimConfig:
         if 'module_settings' in options and 'output_to_file' in options['module_settings']:
             self.sat_sim.set_output_to_file(options["module_settings"]["output_to_file"])
 
+        # Optional: connectivity distance threshold in km
+        if 'module_settings' in options and 'distance_threshold_km' in options['module_settings']:
+            try:
+                self.sat_sim.set_distance_threshold_km(float(options['module_settings']['distance_threshold_km']))
+            except Exception:
+                pass
+
         # Configure the ground station if specified.
         if 'ground_station' in options:
             location = options['ground_station'].get('location')
